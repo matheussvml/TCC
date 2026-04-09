@@ -4,21 +4,18 @@ import { useState, useCallback } from "react";
 import Header from "@/components/Header";
 import VideoInput from "@/components/VideoInput";
 import LoadingSteps from "@/components/LoadingSteps";
-import TranscriptResult from "@/components/TranscriptResult";
-import { loadingSteps } from "@/data/mockData";
+import ResultsSection from "@/components/ResultsSection";
+import { loadingSteps, mockAnalysisResult } from "@/data/mockData";
+import type { AnalysisResult } from "@/data/mockData";
 
-// API route local (proxy para o n8n, sem problema de CORS)
+// API route local (sem problema de CORS)
 const API_URL = "/api/transcribe";
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [result, setResult] = useState<{
-    text: string;
-    title?: string;
-    thumbnail?: string;
-  } | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const simulateSteps = useCallback((): Promise<void> => {
@@ -45,28 +42,36 @@ export default function Home() {
     setIsLoading(true);
     setCurrentStep(0);
 
-    // Inicia animação de loading E a requisição ao n8n em paralelo
     const [, response] = await Promise.all([
       simulateSteps(),
       fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: url.trim() }),
-      }).then(async (res) => {
-        const data = await res.json();
-        return data;
-      }).catch((err) => {
-        return { status: "error", message: err.message };
-      }),
+      })
+        .then(async (res) => res.json())
+        .catch((err) => ({ status: "error", message: err.message })),
     ]);
 
     setIsLoading(false);
 
     if (response.status === "success") {
+      // Monta o AnalysisResult com transcrição real + validação mockada
+      const youtubeMatch = url.match(
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/
+      );
+      const embedUrl = youtubeMatch
+        ? `https://www.youtube.com/embed/${youtubeMatch[1]}`
+        : "";
+
       setResult({
-        text: response.text,
-        title: response.title,
-        thumbnail: response.thumbnail,
+        videoTitle: response.title || "Vídeo analisado",
+        videoChannel: "",
+        thumbnailUrl: response.thumbnail || "",
+        embedUrl,
+        transcript: response.text,
+        claims: mockAnalysisResult.claims,
+        overallScore: mockAnalysisResult.overallScore,
       });
     } else {
       setError(response.message || "Erro desconhecido ao processar o vídeo.");
@@ -97,14 +102,7 @@ export default function Home() {
           </div>
         )}
 
-        {result && (
-          <TranscriptResult
-            transcript={result.text}
-            videoUrl={url}
-            videoTitle={result.title}
-            videoThumbnail={result.thumbnail}
-          />
-        )}
+        {result && <ResultsSection result={result} />}
       </main>
 
       <footer className="border-t border-gray-200 bg-white py-4 text-center text-xs text-gray-400">

@@ -1,4 +1,4 @@
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import path from "path";
 
 export async function POST(request: Request) {
@@ -15,8 +15,9 @@ export async function POST(request: Request) {
 
   try {
     const result = await new Promise<string>((resolve, reject) => {
-      exec(
-        `python -X utf8 "${scriptPath}" "${url}"`,
+      execFile(
+        "python",
+        ["-X", "utf8", scriptPath, url],
         { timeout: 120000, env: { ...process.env, PYTHONIOENCODING: "utf-8" } },
         (error, stdout, stderr) => {
           if (error) {
