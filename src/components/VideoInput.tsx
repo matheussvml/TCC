@@ -45,7 +45,7 @@ export default function VideoInput({
         </div>
         <button
           type="submit"
-          disabled={isLoading || !url.trim()}
+          disabled={isLoading || url.trim() === ""}
           className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {isLoading ? (
