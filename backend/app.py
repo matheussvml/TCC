@@ -46,12 +46,26 @@ def transcribe():
             "no_warnings": True,
             "noprogress": True,
             "logger": SilentLogger(),
+            # Usa clientes mobile/tv que geralmente burlam a checagem de bot
+            "extractor_args": {
+                "youtube": {
+                    "player_client": ["tv", "ios", "android", "web"],
+                }
+            },
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
                 "preferredquality": "32",
             }],
         }
+
+        # Suporte opcional a cookies via variável de ambiente (conteúdo do cookies.txt)
+        cookies_content = os.environ.get("YT_COOKIES", "")
+        if cookies_content:
+            cookies_path = os.path.join(temp_dir, f"cookies_{uuid.uuid4().hex[:8]}.txt")
+            with open(cookies_path, "w", encoding="utf-8") as f:
+                f.write(cookies_content)
+            ydl_opts["cookiefile"] = cookies_path
 
         video_title = ""
         video_thumbnail = ""
