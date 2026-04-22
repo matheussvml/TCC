@@ -16,7 +16,14 @@ def main():
     # ==========================================
     # Coloque sua API key do Groq aqui ou
     # defina a variável de ambiente GROQ_API_KEY
-    GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
+    GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+
+    if not GROQ_API_KEY:
+        print(json.dumps({
+            "status": "error",
+            "message": "GROQ_API_KEY não configurada. Defina a variável de ambiente."
+        }))
+        sys.exit(1)
     # ==========================================
 
     if len(sys.argv) < 2:
