@@ -53,12 +53,12 @@ graph TD
     User -->|Cola o link do vídeo| UI
     UI -->|POST com URL do Vídeo| Webhook
     Webhook --> ExecCmd
-    ExecCmd -->|Executa| PyScript
-    PyScript -->|yt-dlp| Audio
-    Audio -->|API Request| Groq
-    Groq -->|Retorna Texto| PyScript
-    PyScript -->|Retorna JSON via stdout| ExecCmd
-    ExecCmd --> Extractor
+    ExecCmd -->|Envia URL do vídeo| PyScript
+    PyScript -->|yt-dlp baixa áudio| Audio
+    Audio -->|Envia áudio para transcrever| Groq
+    Groq -->|Devolve texto transcrito| PyScript
+    PyScript -->|Envia TXT da transcrição| ExecCmd
+    ExecCmd -->|Repassa texto para análise| Extractor
     Extractor -->|Transforma texto em afirmações| Cascata
 
     Cascata -->|Evidência Encontrada| ValCientifica
