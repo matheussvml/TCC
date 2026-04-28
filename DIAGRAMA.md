@@ -1,21 +1,5 @@
 # Diagrama do Projeto — FactCheck AI
 
-## Processo de Transcrição (Visão Simplificada)
-
-```mermaid
-flowchart LR
-    A([Link do Vídeo]) --> B[Baixa Áudio]
-    B --> C[IA Transcreve]
-    C --> D([Texto na Tela])
-
-    style A fill:#3b82f6,stroke:#2563eb,color:#fff
-    style B fill:#facc15,stroke:#ca8a04,color:#000
-    style C fill:#10b981,stroke:#059669,color:#fff
-    style D fill:#3b82f6,stroke:#2563eb,color:#fff
-```
-
----
-
 ## Arquitetura Completa com Validação em Cascata
 
 ```mermaid
