@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto do Projeto TCC FactCheck KAI
 
-> Arquivo de continuidade para o Claude Code (CLI/VSCode).
-> Última atualização: 12/05/2026
+> Arquivo de continuidade para o Claude Code (CLI/VSCode) e para novos chats.
+> Última atualização: 12/05/2026 — sessão de implementação prática
 
 ---
 
@@ -24,7 +24,7 @@
 
 ---
 
-## 3. Arquitetura atual
+## 3. Arquitetura atual (versão final 12/05/2026)
 
 ```
 [Usuário cola URL de vídeo]
@@ -45,43 +45,75 @@
   URL: https://matheusvml.app.n8n.cloud/webhook/validar-alegacoes
   Workflow: "FactCheck KAI — Validação em Cascata (Groq)"
         ↓
-  Nó 1 — Preparar dados
-  Nó 2 — Code in JavaScript (monta body Groq para extração)
-  Nó 3 — Groq HTTP Request: extrai até 5 alegações → JSON
-  Nó 4 — Parsear alegações (Code): explode em N itens
-  Nó 5 — OpenAlex HTTP GET: busca artigos científicos por alegação
-  Nó 6 — Code (Consolidar + monta body Groq para validação)
-  Nó 7 — Groq HTTP Request: valida alegação com evidências → JSON
-  Nó 8 — Formatar Claim (Code): mapeia para formato do frontend
-  Nó 9 — Consolidar resultado final (Code): agrupa claims + overallScore
-  Nó 10 — Respond to Webhook: retorna JSON final
+  Nó 1  — Webhook
+  Nó 2  — Preparar dados (Code)
+  Nó 3  — Code in JavaScript (monta groq_body para extração)
+  Nó 4  — Groq — Extrair alegações (HTTP Request)
+  Nó 5  — Parsear alegações (Code): explode em N itens
+  Nó 6  — OpenAlex — Artigos científicos (HTTP GET)
+  Nó 7  — Consolidar fontes (Code, Run Once for Each Item):
+             - recebe item do OpenAlex
+             - recupera alegação original via $('Parsear alegações').item.json
+             - monta groq_body_validar com id e alegacao_original embutidos no prompt
+  Nó 8  — Groq — Validar alegação (HTTP Request)
+  Nó 9  — Formatar Claim (Code, Run Once for All Items):
+             - lê choices[0].message.content do Groq
+             - parseia JSON com id, alegacao_original, veredicto, confianca, explicacao, fontes
+             - mapeia veredicto → status (validated/invalid)
+             - retorna array claims completo
+  Nó 10 — Consolidar resultado final (Code):
+             - recebe { claims } do Formatar Claim
+             - calcula overallScore
+             - retorna { status: 'success', claims, overallScore }
+  Nó 11 — Respond to Webhook
         ↓
 [Frontend exibe ResultsSection com claims reais]
 ```
 
 ---
 
-## 4. Stack tecnológica
+## 4. Detalhe crítico do workflow n8n
+
+### Por que o Groq precisa devolver id e alegacao_original
+
+O nó HTTP Request do Groq devolve apenas a resposta da API — os campos originais da alegação (texto, id) se perdem após o nó. A solução adotada foi embutir `id` e `alegacao_original` no próprio prompt pedindo ao Groq para incluí-los no JSON de resposta:
+
+```json
+{
+  "id": 1,
+  "alegacao_original": "texto da alegação",
+  "veredicto": "...",
+  "confianca": 0.85,
+  "explicacao": "...",
+  "fontes": ["..."]
+}
+```
+
+Assim o Formatar Claim lê tudo de um lugar só sem precisar referenciar nós anteriores.
+
+---
+
+## 5. Stack tecnológica
 
 | Camada | Tecnologia |
 |--------|-----------|
-| Frontend | Next.js 16, TypeScript, Tailwind CSS, Vercel |
+| Frontend | Next.js 14, TypeScript, Tailwind CSS, Vercel |
 | Transcrição | Python, yt-dlp, Groq API (whisper-large-v3) |
 | Backend de transcrição | Render (variável BACKEND_URL) |
-| Orquestração | n8n Cloud |
+| Orquestração | n8n Cloud (plano gratuito, 1000 exec/mês) |
 | LLM de validação | Groq API — llama-3.3-70b-versatile |
 | Fontes científicas | OpenAlex API (gratuito, sem chave) |
 | Checagem jornalística | Lupa (desconectada temporariamente, a reconectar) |
 
 ---
 
-## 5. Variáveis de ambiente
+## 6. Variáveis de ambiente
 
 ### `.env.local` (desenvolvimento local)
 ```
 GROQ_API_KEY=sua_chave_groq
 NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-alegacoes
-# BACKEND_URL= (deixar vazio em dev local — roda Python direto)
+# BACKEND_URL= (vazio em dev local — roda Python direto)
 ```
 
 ### Vercel (produção)
@@ -91,30 +123,31 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
 ```
 
 ### n8n Cloud
-- `GROQ_API_KEY` não disponível no plano gratuito via Environment Variables
-- Chave está hardcoded nos headers dos dois nós HTTP Request do Groq
-- Modelo usado: `llama-3.3-70b-versatile`
+- Plano gratuito não tem Environment Variables
+- GROQ_API_KEY está hardcoded nos headers dos nós HTTP Request do Groq
+- Modelo: `llama-3.3-70b-versatile`
 
 ---
 
-## 6. Estrutura de arquivos relevantes
+## 7. Estrutura de arquivos relevantes
 
 ```
 /
 ├── extrator_universal.py          # Baixa áudio + transcreve com Groq Whisper
+├── CLAUDE.md                      # Este arquivo
 ├── .env.local                     # Variáveis de ambiente locais (não comitar)
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx               # Página principal — orquestra transcrição + n8n
+│   │   ├── page.tsx               # Orquestra transcrição + chamada n8n (sem mock)
 │   │   ├── api/transcribe/
-│   │   │   └── route.ts           # API route: proxy Render ou executa Python local
+│   │   │   └── route.ts           # Proxy Render ou executa Python local
 │   │   └── globals.css
 │   ├── components/
 │   │   ├── Header.tsx
 │   │   ├── VideoInput.tsx         # Input de URL + botão Analisar
 │   │   ├── LoadingSteps.tsx       # Animação de steps durante processamento
-│   │   ├── ResultsSection.tsx     # Exibe resultado: vídeo + transcrição + claims
-│   │   ├── ClaimCard.tsx          # Card individual — exibe veredicto com 4 estados
+│   │   ├── ResultsSection.tsx     # Sem aviso de placeholder — dados reais
+│   │   ├── ClaimCard.tsx          # Card individual — 4 estados de veredicto
 │   │   ├── ScoreBadge.tsx         # Badge com % de confiabilidade
 │   │   └── TranscriptPanel.tsx    # Painel lateral com transcrição
 │   └── data/
@@ -123,7 +156,7 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
 
 ---
 
-## 7. Formato de dados entre componentes
+## 8. Formato de dados entre componentes
 
 ### Transcrição (extrator_universal.py → route.ts → page.tsx)
 ```json
@@ -194,58 +227,101 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
 
 ---
 
-## 8. Estado atual do desenvolvimento (12/05/2026)
+## 9. Arquitetura futura das camadas de validação (DECISÃO REGISTRADA)
 
-### ✅ Funcionando
-- Frontend Next.js com input de URL e exibição de resultados
-- Transcrição real com Whisper via Groq (local e via Render)
-- Workflow n8n completo rodando em produção
-- Extração de alegações com Groq (llama-3.3-70b-versatile)
-- Busca de artigos científicos via OpenAlex
-- Validação com veredicto e explicação pelo Groq
-- **Integração frontend ↔ n8n completa** — fluxo real: transcrição → n8n → claims reais
-- `ClaimCard` exibe veredicto com 4 estados e cores (VERDADEIRO/FALSO/PARCIALMENTE/SEM EMBASAMENTO)
-- Interface `Claim` atualizada com `veredicto`, `confianca` e `fontes`
-- Relatório científico versão 0.2 com recorte de público idoso
+O fluxo de validação deve seguir uma cascata hierárquica com nós IF no n8n. A regra é: só desce para a próxima camada se a anterior não encontrar evidências.
 
-### 🔧 Pendente / próximos passos
-- Nó da Lupa (checagem jornalística) desconectado — reconectar após estabilizar fluxo principal
-- `claims` retorna apenas 1 item — Consolidar resultado final precisa ser ajustado para agregar todos os itens do loop
-- Testes com vídeos reais de desinformação voltados ao público idoso
-- Capítulo 4 do relatório (Desenvolvimento) a ser escrito após testes
-- Capítulo 5 (Resultados) após testes
-- Capítulo 6 (Conclusão) ao final
+```
+Alegação extraída
+        ↓
+OpenAlex (Camada 1 — Científica)
+        ↓
+[IF: results.length > 0?]
+    ├── SIM → Groq valida com artigos científicos (confiança ~0.9)
+    └── NÃO → Lupa / Aos Fatos (Camada 2 — Jornalística)
+                    ↓
+              [IF: achou checagem?]
+                  ├── SIM → Groq valida com fonte jornalística (confiança ~0.7)
+                  └── NÃO → Reddit / Fóruns (Camada 3 — Comunidades)
+                                    ↓
+                              Groq valida com o que tiver (confiança ~0.4)
+                              ou classifica como SEM EMBASAMENTO SUFICIENTE
+```
 
-### ⚠️ Problema conhecido no n8n
-O nó **Consolidar resultado final** usa `$input.all()` mas o loop de alegações gera N execuções paralelas — por isso só retorna 1 claim. Solução: usar um nó **Merge** antes do Consolidar para juntar todos os items, ou reestruturar o fluxo para processar em batch.
+**Por que essa arquitetura é correta:**
+- Reflete a hierarquia de confiabilidade defendida no relatório (Ciência → Jornalismo → Comunidades)
+- O Groq recebe junto qual camada foi usada e calibra a confiança corretamente
+- O card de cada alegação mostra ao usuário qual fonte foi utilizada — auditável
+- O nó IF no n8n verifica simplesmente `results.length > 0` antes de decidir o caminho
+
+**Status de implementação:**
+- Camada 1 (OpenAlex) ✅ implementada
+- Camada 2 (Lupa) ⏳ nó criado mas desconectado — reconectar com lógica IF
+- Camada 3 (Fóruns/Reddit) ❌ não implementada — trabalho futuro
 
 ---
 
-## 9. Público-alvo do sistema
+## 10. Estado atual (12/05/2026)
 
-**Pessoas idosas (65+)**. Decisão definitiva tomada em 11/05/2026.
+### ✅ Funcionando
+- Frontend Next.js completo e em produção na Vercel
+- Transcrição real com Whisper via Groq (local e Render)
+- Workflow n8n completo e funcional em produção
+- Extração de até 5 alegações com Groq
+- Busca de artigos científicos via OpenAlex
+- Validação com veredicto, confiança e explicação pelo Groq
+- Integração frontend ↔ n8n completa — fluxo real sem mock
+- ClaimCard exibe veredicto com 4 estados e cores
+- Interface Claim atualizada com `veredicto`, `confianca` e `fontes`
+- overallScore calculado dinamicamente
+- Aviso de "dados simulados" removido da UI
+- Relatório científico versão 0.2 com recorte de público idoso
 
-Justificativas:
+### 🔧 Pendente
+- Reconectar Lupa com lógica IF (Camada 2)
+- Implementar Camada 3 (fóruns/Reddit)
+- YouTube bloqueia na Vercel/Render — adicionar upload direto de arquivo como alternativa para a banca
+- Testar com vídeos reais de desinformação em saúde voltados ao público idoso
+- Capítulo 4 do relatório (Desenvolvimento) — escrever após testes
+- Capítulo 5 (Resultados) — após testes com vídeos reais
+- Capítulo 6 (Conclusão) — ao final
+
+### 💡 Ideia para a banca
+Adicionar upload direto de arquivo de áudio/vídeo no frontend além da URL. Garante demonstração sem depender de plataformas externas que podem bloquear.
+
+### ❌ Descartado
+- Detecção de deepfake/voz sintética por IA — complexo demais para o TCC. Fica como trabalho futuro no Capítulo 6.
+
+---
+
+## 11. Público-alvo
+
+**Pessoas idosas (65+)** — decisão definitiva tomada em 11/05/2026.
+
 - Idosos de 65+ compartilham fake news 7x mais que jovens de 18-29 (Guess, Nagler e Tucker, 2019)
 - Posse de celular entre idosos subiu de 66,6% para 78,1% entre 2019-2024 (IBGE, 2024)
 - Interface deve ser simples, linguagem acessível, futuro canal via WhatsApp
 
 ---
 
-## 10. Regras de escrita acadêmica (para quando retomar o relatório)
+## 12. Regras de escrita acadêmica
 
 - Todo fato afirmado precisa de citação ABNT imediata
 - Nunca inventar referência — pesquisar e verificar autor, título, periódico, ano e volume
 - Não alterar referências já existentes — apenas acrescentar novas
 - Relatório atual: versão 0.2 (`Relatorio_Cientifico_0_2.docx`)
+- Usar `agentlog.md` e `agentlog_update_11052026.md` como base de contexto acadêmico
 
 ---
 
-## 11. Instrução para o próximo agente ou sessão
+## 13. Instrução para o próximo agente ou sessão
 
-Ao retomar:
-1. Prioridade: corrigir o bug do Consolidar resultado final no n8n (retorna só 1 claim)
-2. Testar o fluxo completo com vídeos reais de desinformação voltados a idosos
-3. Se testes OK: escrever Capítulo 4 (Desenvolvimento) e 5 (Resultados)
-4. Reconectar nó da Lupa no workflow do n8n
-5. O relatório acadêmico e o código devem evoluir em paralelo
+Ao retomar sessão de código:
+1. Reconectar nó da Lupa com lógica IF (Camada 2)
+2. Testar fluxo completo com vídeos reais de desinformação voltados a idosos
+3. Implementar upload direto de arquivo no frontend (alternativa ao URL para a banca)
+
+Ao retomar sessão de documentação acadêmica:
+1. Escrever Capítulo 4 (Desenvolvimento) com base na arquitetura implementada
+2. Escrever Capítulo 5 (Resultados) após testes com vídeos reais
+3. Escrever Capítulo 6 (Conclusão) com trabalhos futuros: deepfake, WhatsApp, Camada 3
