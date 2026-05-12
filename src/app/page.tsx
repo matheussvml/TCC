@@ -5,11 +5,11 @@ import Header from "@/components/Header";
 import VideoInput from "@/components/VideoInput";
 import LoadingSteps from "@/components/LoadingSteps";
 import ResultsSection from "@/components/ResultsSection";
-import { loadingSteps, mockAnalysisResult } from "@/data/mockData";
+import { loadingSteps } from "@/data/mockData";
 import type { AnalysisResult } from "@/data/mockData";
 
-// API route local (sem problema de CORS)
 const API_URL = "/api/transcribe";
+const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -42,40 +42,57 @@ export default function Home() {
     setIsLoading(true);
     setCurrentStep(0);
 
-    const [, response] = await Promise.all([
-      simulateSteps(),
-      fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
-      })
-        .then(async (res) => res.json())
-        .catch((err) => ({ status: "error", message: err.message })),
-    ]);
+    simulateSteps();
+
+    const transcribeData = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: url.trim() }),
+    })
+      .then((res) => res.json())
+      .catch((err) => ({ status: "error", message: err.message }));
+
+    if (transcribeData.status !== "success") {
+      setIsLoading(false);
+      setError(transcribeData.message || "Erro ao transcrever o vídeo.");
+      return;
+    }
+
+    const n8nData = await fetch(N8N_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        transcricao: transcribeData.text,
+        videoTitle: transcribeData.title || "",
+        videoUrl: url.trim(),
+      }),
+    })
+      .then((res) => res.json())
+      .catch((err) => ({ status: "error", message: err.message }));
 
     setIsLoading(false);
 
-    if (response.status === "success") {
-      // Monta o AnalysisResult com transcrição real + validação mockada
-      const youtubeMatch = url.match(
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/
-      );
-      const embedUrl = youtubeMatch
-        ? `https://www.youtube.com/embed/${youtubeMatch[1]}`
-        : "";
-
-      setResult({
-        videoTitle: response.title || "Vídeo analisado",
-        videoChannel: "",
-        thumbnailUrl: response.thumbnail || "",
-        embedUrl,
-        transcript: response.text,
-        claims: mockAnalysisResult.claims,
-        overallScore: mockAnalysisResult.overallScore,
-      });
-    } else {
-      setError(response.message || "Erro desconhecido ao processar o vídeo.");
+    if (n8nData.status !== "success") {
+      setError(n8nData.message || "Erro ao validar alegações.");
+      return;
     }
+
+    const youtubeMatch = url.match(
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/
+    );
+    const embedUrl = youtubeMatch
+      ? `https://www.youtube.com/embed/${youtubeMatch[1]}`
+      : "";
+
+    setResult({
+      videoTitle: transcribeData.title || "Vídeo analisado",
+      videoChannel: "",
+      thumbnailUrl: transcribeData.thumbnail || "",
+      embedUrl,
+      transcript: transcribeData.text,
+      claims: n8nData.claims,
+      overallScore: n8nData.overallScore,
+    });
   }, [url, isLoading, simulateSteps]);
 
   return (
