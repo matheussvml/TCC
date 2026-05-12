@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto do Projeto TCC FactCheck KAI
 
 > Arquivo de continuidade para o Claude Code (CLI/VSCode) e para novos chats.
-> Última atualização: 12/05/2026 — sessão de implementação prática
+> Última atualização: 13/05/2026 — frontend resiliente + diagnóstico de extração
 
 ---
 
@@ -261,27 +261,41 @@ OpenAlex (Camada 1 — Científica)
 
 ---
 
-## 10. Estado atual (12/05/2026)
+## 10. Estado atual (13/05/2026)
 
 ### ✅ Funcionando
 - Frontend Next.js completo e em produção na Vercel
 - Transcrição real com Whisper via Groq (local e Render)
 - Workflow n8n completo e funcional em produção
-- Extração de até 5 alegações com Groq
 - Busca de artigos científicos via OpenAlex
 - Validação com veredicto, confiança e explicação pelo Groq
 - Integração frontend ↔ n8n completa — fluxo real sem mock
-- ClaimCard exibe veredicto com 4 estados e cores
+- ClaimCard exibe veredicto com 4 estados e cores + badge de % de confiança
 - Interface Claim atualizada com `veredicto`, `confianca` e `fontes`
-- overallScore calculado dinamicamente
+- **overallScore com fallback** no frontend: se o n8n retornar 0, recalcula como média das `confianca` × 100 (corrige bug do nó Consolidar)
+- **ClaimCard tolerante a `text` vazio** — mostra placeholder "Alegação não foi extraída pelo modelo" e exibe a explicação mesmo assim
+- **Breakdown por veredicto** no ResultsSection (chips coloridos: verdadeiras / parciais / falsas / sem embasamento)
+- Lista de `fontes` renderizada dentro de cada ClaimCard quando disponível
 - Aviso de "dados simulados" removido da UI
 - Relatório científico versão 0.2 com recorte de público idoso
 
-### 🔧 Pendente
+### 🐛 Correções aplicadas em 13/05/2026
+- **Formatar Claim (n8n)**: trocada a referência de `$('Consolidar fontes')` para `$('Mesclar dados')` — agora o `text` da alegação chega preenchido no frontend
+- **page.tsx**: recalcula overallScore se o n8n retornar 0
+- **ClaimCard.tsx**: badge de % de confiança + fallback de texto vazio + lista de fontes
+- **ResultsSection.tsx**: substituiu "X de Y validadas" por contagem total + chips por tipo de veredicto
+
+### 🔧 Pendente (código)
+- **CRÍTICO — ver [DIAGNOSTICO_VALIDACAO.md](./DIAGNOSTICO_VALIDACAO.md)**:
+  - Nó "Groq — Extrair alegações" devolve só 1 alegação em vez de 5 → reforçar prompt
+  - Alegações vão coloquiais para o OpenAlex → adicionar campo `query_busca` em inglês científico
+  - Troca do parâmetro de busca do nó OpenAlex de `alegacao` para `query_busca`
 - Reconectar Lupa com lógica IF (Camada 2)
 - Implementar Camada 3 (fóruns/Reddit)
 - YouTube bloqueia na Vercel/Render — adicionar upload direto de arquivo como alternativa para a banca
 - Testar com vídeos reais de desinformação em saúde voltados ao público idoso
+
+### 🔧 Pendente (documentação acadêmica)
 - Capítulo 4 do relatório (Desenvolvimento) — escrever após testes
 - Capítulo 5 (Resultados) — após testes com vídeos reais
 - Capítulo 6 (Conclusão) — ao final
@@ -316,10 +330,14 @@ Adicionar upload direto de arquivo de áudio/vídeo no frontend além da URL. Ga
 
 ## 13. Instrução para o próximo agente ou sessão
 
-Ao retomar sessão de código:
-1. Reconectar nó da Lupa com lógica IF (Camada 2)
-2. Testar fluxo completo com vídeos reais de desinformação voltados a idosos
-3. Implementar upload direto de arquivo no frontend (alternativa ao URL para a banca)
+Ao retomar sessão de código (em ordem de prioridade):
+1. **Ler [DIAGNOSTICO_VALIDACAO.md](./DIAGNOSTICO_VALIDACAO.md)** e executar o Plano consolidado:
+   - Novo prompt do nó "Groq — Extrair alegações" exigindo 5 alegações + campo `query_busca` em inglês
+   - JS atualizado do "Parsear alegações" expondo `query_busca`
+   - Trocar parâmetro de busca do nó OpenAlex
+2. Reconectar nó da Lupa com lógica IF (Camada 2)
+3. Testar fluxo completo com vídeos reais de desinformação voltados a idosos
+4. Implementar upload direto de arquivo no frontend (alternativa ao URL para a banca)
 
 Ao retomar sessão de documentação acadêmica:
 1. Escrever Capítulo 4 (Desenvolvimento) com base na arquitetura implementada

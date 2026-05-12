@@ -32,11 +32,14 @@ URL do vídeo
 
 | Arquivo | Papel |
 |---------|-------|
-| `src/app/page.tsx` | Orquestra transcrição + chamada n8n |
+| `src/app/page.tsx` | Orquestra transcrição + chamada n8n. Recalcula overallScore se n8n retornar 0 |
 | `src/app/api/transcribe/route.ts` | Proxy para Render ou executa Python local |
 | `extrator_universal.py` | Baixa áudio e transcreve com Groq Whisper |
-| `src/components/ClaimCard.tsx` | Exibe veredicto com 4 estados e cores |
+| `src/components/ClaimCard.tsx` | Exibe veredicto + % de confiança + fontes. Tolerante a `text` vazio |
+| `src/components/ResultsSection.tsx` | Layout com vídeo, transcrição e chips de breakdown por veredicto |
 | `src/data/mockData.ts` | Tipos `Claim` e `AnalysisResult` — NÃO são mais mock |
+| `CLAUDE.md` | Contexto detalhado do projeto |
+| `DIAGNOSTICO_VALIDACAO.md` | Plano pendente para corrigir extração/busca científica |
 
 ## Variáveis de ambiente necessárias
 
@@ -46,10 +49,18 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
 BACKEND_URL=...  # apenas em produção (Vercel → Render)
 ```
 
-## Problema em aberto no n8n
+## Problemas em aberto no n8n
 
-O nó **Consolidar resultado final** retorna apenas 1 claim porque usa `$input.all()` em loop paralelo.
-Solução pendente: adicionar nó **Merge** antes do Consolidar.
+**Ver [DIAGNOSTICO_VALIDACAO.md](./DIAGNOSTICO_VALIDACAO.md) para o plano detalhado.**
+
+1. **Extração só pega 1 alegação em vez de 5** — prompt do nó "Groq — Extrair alegações" precisa ser reforçado
+2. **Alegação coloquial vai bruta para o OpenAlex** — adicionar campo `query_busca` em inglês técnico e usar como parâmetro de busca no nó OpenAlex
+3. **Lupa (Camada 2 jornalística)** desconectada — reconectar com nó IF de fallback quando OpenAlex retornar vazio
+
+### Já corrigido em 13/05/2026
+- Formatar Claim agora lê `alegacao` do nó **Mesclar dados** (antes lia de Consolidar fontes e vinha vazio)
+- Frontend recalcula `overallScore` quando n8n retorna 0
+- ClaimCard mostra placeholder quando `text` está vazio
 
 ## Regras para agentes
 
@@ -57,3 +68,4 @@ Solução pendente: adicionar nó **Merge** antes do Consolidar.
 - A interface `Claim` em `mockData.ts` é o contrato de dados — qualquer mudança no n8n deve refletir aqui
 - `NEXT_PUBLIC_` vars são expostas no bundle do browser — não colocar secrets com esse prefixo
 - O público-alvo são idosos: linguagem nos veredictos e explicações deve ser simples e direta
+- Ao tocar no workflow do n8n, sempre confirmar **de qual nó anterior** os dados estão sendo lidos (`$('Nome do nó').all()[index]`) — referências erradas geram campos vazios silenciosamente
