@@ -8,6 +8,53 @@ interface ClaimCardProps {
   index: number;
 }
 
+function VeredictoBadge({ veredicto, status }: { veredicto?: string; status: Claim["status"] }) {
+  if (veredicto === "VERDADEIRO") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        Verdadeiro
+      </span>
+    );
+  }
+  if (veredicto === "PARCIALMENTE VERDADEIRO") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-50 px-3 py-1 text-xs font-semibold text-yellow-700">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        Parcialmente Verdadeiro
+      </span>
+    );
+  }
+  if (veredicto === "FALSO") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+        <XCircle className="h-3.5 w-3.5" />
+        Falso
+      </span>
+    );
+  }
+  if (veredicto === "SEM EMBASAMENTO SUFICIENTE") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        Sem Embasamento
+      </span>
+    );
+  }
+  // fallback para dados sem veredicto
+  return status === "validated" ? (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+      <CheckCircle2 className="h-3.5 w-3.5" />
+      Validado
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+      <XCircle className="h-3.5 w-3.5" />
+      Sem Evidências
+    </span>
+  );
+}
+
 export default function ClaimCard({ claim, index }: ClaimCardProps) {
   const isValid = claim.status === "validated";
 
@@ -19,17 +66,7 @@ export default function ClaimCard({ claim, index }: ClaimCardProps) {
       <div className="p-5">
         {/* Status badge */}
         <div className="mb-3 flex items-center gap-2">
-          {isValid ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Validado
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-              <XCircle className="h-3.5 w-3.5" />
-              Sem Evidências
-            </span>
-          )}
+          <VeredictoBadge veredicto={claim.veredicto} status={claim.status} />
         </div>
 
         {/* Claim text */}

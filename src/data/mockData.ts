@@ -2,9 +2,12 @@ export interface Claim {
   id: number;
   text: string;
   status: "validated" | "invalid";
+  veredicto?: string;
+  confianca?: number;
   source: string;
   sourceLevel: string;
   sourceUrl?: string;
+  fontes?: string[];
 }
 
 export interface AnalysisResult {

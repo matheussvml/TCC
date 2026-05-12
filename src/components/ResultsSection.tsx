@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck, Info } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import type { AnalysisResult } from "@/data/mockData";
 import ScoreBadge from "./ScoreBadge";
 import TranscriptPanel from "./TranscriptPanel";
@@ -81,15 +81,6 @@ export default function ResultsSection({ result }: ResultsSectionProps) {
             <h3 className="text-base font-bold text-gray-900">
               Painel de Validação
             </h3>
-          </div>
-
-          {/* Aviso de placeholder */}
-          <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
-            <Info className="h-4 w-4 shrink-0 text-amber-500" />
-            <p className="text-xs text-amber-700">
-              Dados de validação simulados (placeholder). A integração real será
-              feita via n8n.
-            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-1">
