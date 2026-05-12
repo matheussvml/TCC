@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+CLAUDE.md*
+AGENTS.md*
+CHANGELOG.md*
 # next.js
 /.next/
 /out/
