@@ -1,7 +1,7 @@
 # CLAUDE.md — Contexto do Projeto TCC FactCheck KAI
 
 > Arquivo de continuidade para o Claude Code (CLI/VSCode).
-> Última atualização: 11/05/2026
+> Última atualização: 12/05/2026
 
 ---
 
@@ -65,7 +65,7 @@
 
 | Camada | Tecnologia |
 |--------|-----------|
-| Frontend | Next.js 14, TypeScript, Tailwind CSS, Vercel |
+| Frontend | Next.js 16, TypeScript, Tailwind CSS, Vercel |
 | Transcrição | Python, yt-dlp, Groq API (whisper-large-v3) |
 | Backend de transcrição | Render (variável BACKEND_URL) |
 | Orquestração | n8n Cloud |
@@ -102,6 +102,7 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
 ```
 /
 ├── extrator_universal.py          # Baixa áudio + transcreve com Groq Whisper
+├── .env.local                     # Variáveis de ambiente locais (não comitar)
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx               # Página principal — orquestra transcrição + n8n
@@ -113,7 +114,7 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
 │   │   ├── VideoInput.tsx         # Input de URL + botão Analisar
 │   │   ├── LoadingSteps.tsx       # Animação de steps durante processamento
 │   │   ├── ResultsSection.tsx     # Exibe resultado: vídeo + transcrição + claims
-│   │   ├── ClaimCard.tsx          # Card individual de cada alegação validada
+│   │   ├── ClaimCard.tsx          # Card individual — exibe veredicto com 4 estados
 │   │   ├── ScoreBadge.tsx         # Badge com % de confiabilidade
 │   │   └── TranscriptPanel.tsx    # Painel lateral com transcrição
 │   └── data/
@@ -151,7 +152,7 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
     {
       "id": 1,
       "text": "alegação extraída",
-      "status": "validated" | "invalid",
+      "status": "validated | invalid",
       "veredicto": "VERDADEIRO | FALSO | PARCIALMENTE VERDADEIRO | SEM EMBASAMENTO SUFICIENTE",
       "confianca": 0.9,
       "source": "explicação em linguagem simples para idosos",
@@ -160,6 +161,21 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
     }
   ],
   "overallScore": 75
+}
+```
+
+### Interface Claim (mockData.ts)
+```typescript
+{
+  id: number;
+  text: string;
+  status: "validated" | "invalid";
+  veredicto?: string;
+  confianca?: number;
+  source: string;
+  sourceLevel: string;
+  sourceUrl?: string;
+  fontes?: string[];
 }
 ```
 
@@ -178,7 +194,7 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
 
 ---
 
-## 8. Estado atual do desenvolvimento (11/05/2026)
+## 8. Estado atual do desenvolvimento (12/05/2026)
 
 ### ✅ Funcionando
 - Frontend Next.js com input de URL e exibição de resultados
@@ -187,14 +203,17 @@ NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-ale
 - Extração de alegações com Groq (llama-3.3-70b-versatile)
 - Busca de artigos científicos via OpenAlex
 - Validação com veredicto e explicação pelo Groq
-- Frontend conectado ao n8n (mock substituído por dados reais)
+- **Integração frontend ↔ n8n completa** — fluxo real: transcrição → n8n → claims reais
+- `ClaimCard` exibe veredicto com 4 estados e cores (VERDADEIRO/FALSO/PARCIALMENTE/SEM EMBASAMENTO)
+- Interface `Claim` atualizada com `veredicto`, `confianca` e `fontes`
 - Relatório científico versão 0.2 com recorte de público idoso
 
 ### 🔧 Pendente / próximos passos
 - Nó da Lupa (checagem jornalística) desconectado — reconectar após estabilizar fluxo principal
 - `claims` retorna apenas 1 item — Consolidar resultado final precisa ser ajustado para agregar todos os itens do loop
-- Capítulo 4 do relatório (Desenvolvimento) a ser escrito após testes com vídeos reais
-- Capítulo 5 (Resultados) após testes com vídeos de desinformação voltados ao público idoso
+- Testes com vídeos reais de desinformação voltados ao público idoso
+- Capítulo 4 do relatório (Desenvolvimento) a ser escrito após testes
+- Capítulo 5 (Resultados) após testes
 - Capítulo 6 (Conclusão) ao final
 
 ### ⚠️ Problema conhecido no n8n
@@ -225,8 +244,8 @@ Justificativas:
 ## 11. Instrução para o próximo agente ou sessão
 
 Ao retomar:
-1. Verificar se houve avanço nos testes com vídeos reais
-2. Se sim: escrever Capítulo 4 (Desenvolvimento) e 5 (Resultados)
-3. Corrigir o bug do Consolidar resultado final no n8n (retorna só 1 claim)
+1. Prioridade: corrigir o bug do Consolidar resultado final no n8n (retorna só 1 claim)
+2. Testar o fluxo completo com vídeos reais de desinformação voltados a idosos
+3. Se testes OK: escrever Capítulo 4 (Desenvolvimento) e 5 (Resultados)
 4. Reconectar nó da Lupa no workflow do n8n
 5. O relatório acadêmico e o código devem evoluir em paralelo

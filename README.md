@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FactCheck KAI
 
-## Getting Started
+Sistema de verificação científica para conteúdos digitais voltado ao público idoso.
 
-First, run the development server:
+**TCC — UNIFOR, Ciência da Computação, 2026**
+Autores: Erich Lima Schlaepfer, Matheus Vasconcelos de Macena Lima, Pedro Diógenes de Holanda
+Orientador: Prof. Me. Ronaldo Gonçalves Junior
+
+---
+
+## Como funciona
+
+1. Usuário cola a URL de um vídeo (YouTube, TikTok, Instagram etc.)
+2. O áudio é baixado e transcrito com Whisper via Groq
+3. Um workflow no n8n extrai até 5 alegações do texto
+4. Cada alegação é buscada no OpenAlex (base científica) e validada pelo Groq
+5. O frontend exibe as alegações com veredicto, confiança e fontes
+
+---
+
+## Stack
+
+| Camada | Tecnologia |
+|--------|-----------|
+| Frontend | Next.js 16, TypeScript, Tailwind CSS — Vercel |
+| Transcrição | Python, yt-dlp, Groq Whisper (whisper-large-v3) — Render |
+| Orquestração | n8n Cloud |
+| LLM | Groq API — llama-3.3-70b-versatile |
+| Fontes científicas | OpenAlex API |
+
+---
+
+## Rodando localmente
+
+### Pré-requisitos
+
+- Node.js 18+
+- Python 3.10+
+- Conta Groq com chave de API
+- yt-dlp instalado (`pip install yt-dlp`)
+
+### Instalação
+
+```bash
+npm install
+pip install -r requirements.txt  # se existir, ou: pip install yt-dlp groq
+```
+
+### Variáveis de ambiente
+
+Crie um `.env.local` na raiz:
+
+```
+GROQ_API_KEY=sua_chave_groq
+NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-alegacoes
+# BACKEND_URL= deixar vazio em dev local
+```
+
+Em produção (Vercel), adicione também:
+
+```
+BACKEND_URL=https://seu-backend.onrender.com
+```
+
+### Iniciar
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Produção
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Frontend:** https://factcheckkai.vercel.app
+- **Repositório:** https://github.com/matheussvml/TCC
