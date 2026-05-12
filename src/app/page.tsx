@@ -84,14 +84,27 @@ export default function Home() {
       ? `https://www.youtube.com/embed/${youtubeMatch[1]}`
       : "";
 
+    // Recalcula overallScore com base na média de confianca das claims
+    // se o n8n retornar 0 ou indefinido (workaround pro bug do nó Consolidar)
+    const claims = Array.isArray(n8nData.claims) ? n8nData.claims : [];
+    let overallScore = n8nData.overallScore;
+    if (!overallScore && claims.length > 0) {
+      const totalConfianca = claims.reduce(
+        (acc: number, c: { confianca?: number }) =>
+          acc + (typeof c.confianca === "number" ? c.confianca : 0),
+        0
+      );
+      overallScore = Math.round((totalConfianca / claims.length) * 100);
+    }
+
     setResult({
       videoTitle: transcribeData.title || "Vídeo analisado",
       videoChannel: "",
       thumbnailUrl: transcribeData.thumbnail || "",
       embedUrl,
       transcript: transcribeData.text,
-      claims: n8nData.claims,
-      overallScore: n8nData.overallScore,
+      claims,
+      overallScore: overallScore || 0,
     });
   }, [url, isLoading, simulateSteps]);
 
