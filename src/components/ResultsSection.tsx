@@ -11,10 +11,19 @@ interface ResultsSectionProps {
 }
 
 export default function ResultsSection({ result }: ResultsSectionProps) {
-  const validCount = result.claims.filter(
-    (c) => c.status === "validated"
-  ).length;
   const totalCount = result.claims.length;
+  const trueCount = result.claims.filter(
+    (c) => c.veredicto === "VERDADEIRO"
+  ).length;
+  const partialCount = result.claims.filter(
+    (c) => c.veredicto === "PARCIALMENTE VERDADEIRO"
+  ).length;
+  const falseCount = result.claims.filter(
+    (c) => c.veredicto === "FALSO"
+  ).length;
+  const noBasisCount = result.claims.filter(
+    (c) => c.veredicto === "SEM EMBASAMENTO SUFICIENTE"
+  ).length;
 
   return (
     <section className="animate-fade-in mx-auto w-full max-w-5xl px-6 pb-16 pt-4">
@@ -60,9 +69,35 @@ export default function ResultsSection({ result }: ResultsSectionProps) {
             <div className="mt-4 flex flex-wrap items-center gap-4">
               <ScoreBadge score={result.overallScore} />
               <span className="text-sm text-gray-500">
-                {validCount} de {totalCount} afirmações validadas
+                {totalCount} {totalCount === 1 ? "alegação analisada" : "alegações analisadas"}
               </span>
             </div>
+
+            {/* Breakdown por veredicto */}
+            {totalCount > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                {trueCount > 0 && (
+                  <span className="rounded-md bg-green-50 px-2 py-1 text-green-700">
+                    {trueCount} verdadeira{trueCount > 1 ? "s" : ""}
+                  </span>
+                )}
+                {partialCount > 0 && (
+                  <span className="rounded-md bg-yellow-50 px-2 py-1 text-yellow-700">
+                    {partialCount} parcial{partialCount > 1 ? "is" : ""}
+                  </span>
+                )}
+                {falseCount > 0 && (
+                  <span className="rounded-md bg-red-50 px-2 py-1 text-red-700">
+                    {falseCount} falsa{falseCount > 1 ? "s" : ""}
+                  </span>
+                )}
+                {noBasisCount > 0 && (
+                  <span className="rounded-md bg-gray-100 px-2 py-1 text-gray-600">
+                    {noBasisCount} sem embasamento
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -83,11 +118,17 @@ export default function ResultsSection({ result }: ResultsSectionProps) {
             </h3>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-1">
-            {result.claims.map((claim, i) => (
-              <ClaimCard key={claim.id} claim={claim} index={i} />
-            ))}
-          </div>
+          {totalCount > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-1">
+              {result.claims.map((claim, i) => (
+                <ClaimCard key={claim.id} claim={claim} index={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
+              Nenhuma alegação foi extraída desta transcrição.
+            </div>
+          )}
         </div>
       </div>
     </section>
