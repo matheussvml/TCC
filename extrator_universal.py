@@ -52,23 +52,33 @@ def main():
                 import sys as _sys
                 print(msg, file=_sys.stderr)
 
-        # Tenta cookies dos browsers mais comuns para contornar bloqueio do YouTube.
-        # Edge sempre está presente no Windows 10+; Chrome e Firefox como alternativas.
-        BROWSERS = ["edge", "chrome", "firefox", "brave", "chromium"]
-        cookies_browser = None
-        for browser in BROWSERS:
-            try:
-                with yt_dlp.YoutubeDL({
-                    "quiet": True,
-                    "no_warnings": True,
-                    "cookiesfrombrowser": (browser,),
-                    "logger": StderrLogger(),
-                }) as _ydl:
-                    _ydl.cookiejar  # valida acesso ao jar sem baixar nada
-                cookies_browser = browser
-                break
-            except Exception:
-                continue
+        # --- Resolução de cookies para contornar bloqueio de bot do YouTube ---
+        # Prioridade:
+        #   1. Variável COOKIES_FILE apontando para um cookies.txt exportado
+        #   2. cookies.txt na mesma pasta deste script
+        #   3. Cookies extraídos diretamente do browser (edge → chrome → firefox)
+        # Para exportar o cookies.txt corretamente:
+        #   - Abra uma aba anônima, faça login no YouTube
+        #   - Acesse youtube.com/robots.txt na mesma aba
+        #   - Exporte os cookies com a extensão "Get cookies.txt LOCALLY" (Chrome)
+        #     ou "cookies.txt" (Firefox), salve como cookies.txt nesta pasta
+        #   - Feche a aba anônima imediatamente
+
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Suporte a COOKIES_CONTENT (base64) para Vercel/ambientes sem sistema de arquivos persistente
+        cookies_file = None
+        cookies_content_b64 = os.environ.get("COOKIES_CONTENT")
+        if cookies_content_b64:
+            import base64
+            _tmp_cookies = os.path.join(tempfile.gettempdir(), f"yt_cookies_{uuid.uuid4().hex[:8]}.txt")
+            with open(_tmp_cookies, "wb") as _f:
+                _f.write(base64.b64decode(cookies_content_b64))
+            cookies_file = _tmp_cookies
+        else:
+            _candidate = os.environ.get("COOKIES_FILE") or os.path.join(script_dir, "cookies.txt")
+            if os.path.exists(_candidate):
+                cookies_file = _candidate
 
         ydl_opts = {
             "format": "worstaudio/worst",
@@ -84,8 +94,24 @@ def main():
             }],
         }
 
-        if cookies_browser:
-            ydl_opts["cookiesfrombrowser"] = (cookies_browser,)
+        if cookies_file:
+            ydl_opts["cookiefile"] = cookies_file
+        else:
+            # Fallback: tenta ler cookies diretamente do browser instalado
+            BROWSERS = ["edge", "chrome", "firefox", "brave", "chromium"]
+            for browser in BROWSERS:
+                try:
+                    with yt_dlp.YoutubeDL({
+                        "quiet": True,
+                        "no_warnings": True,
+                        "cookiesfrombrowser": (browser,),
+                        "logger": StderrLogger(),
+                    }) as _ydl:
+                        list(_ydl.cookiejar)  # força leitura do jar; falha se browser ausente
+                    ydl_opts["cookiesfrombrowser"] = (browser,)
+                    break
+                except Exception:
+                    continue
 
         video_title = ""
         video_thumbnail = ""
@@ -121,6 +147,8 @@ def main():
 
         # --- ETAPA 3: Limpeza ---
         os.remove(final_audio)
+        if cookies_content_b64 and cookies_file and os.path.exists(cookies_file):
+            os.remove(cookies_file)
 
         # --- ETAPA 4: Output JSON ---
         print(json.dumps({
