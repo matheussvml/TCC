@@ -52,6 +52,24 @@ def main():
                 import sys as _sys
                 print(msg, file=_sys.stderr)
 
+        # Tenta cookies dos browsers mais comuns para contornar bloqueio do YouTube.
+        # Edge sempre está presente no Windows 10+; Chrome e Firefox como alternativas.
+        BROWSERS = ["edge", "chrome", "firefox", "brave", "chromium"]
+        cookies_browser = None
+        for browser in BROWSERS:
+            try:
+                with yt_dlp.YoutubeDL({
+                    "quiet": True,
+                    "no_warnings": True,
+                    "cookiesfrombrowser": (browser,),
+                    "logger": StderrLogger(),
+                }) as _ydl:
+                    _ydl.cookiejar  # valida acesso ao jar sem baixar nada
+                cookies_browser = browser
+                break
+            except Exception:
+                continue
+
         ydl_opts = {
             "format": "worstaudio/worst",
             "outtmpl": audio_path + ".%(ext)s",
@@ -65,6 +83,9 @@ def main():
                 "preferredquality": "32",
             }],
         }
+
+        if cookies_browser:
+            ydl_opts["cookiesfrombrowser"] = (cookies_browser,)
 
         video_title = ""
         video_thumbnail = ""
