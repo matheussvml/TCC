@@ -1,16 +1,6 @@
-export interface Claim {
-  id: number;
-  text: string;
-  status: "validated" | "invalid";
-  veredicto?: string;
-  confianca?: number;
-  displayScore?: number;
-  displayColor?: "green" | "yellow" | "red" | "gray";
-  source: string;
-  sourceLevel: string;
-  sourceUrl?: string;
-  fontes?: string[];
-}
+import type { Claim } from "@/lib/scoring";
+
+export type { Claim } from "@/lib/scoring";
 
 export interface AnalysisResult {
   videoTitle: string;
@@ -50,8 +40,12 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       confianca: 0.92,
       displayScore: 92,
       displayColor: "green",
-      source: "JAMA Internal Medicine (2014) - Meta-análise de 47 estudos",
-      sourceLevel: "Nível 1 - Artigo Científico (Revisão Sistemática)",
+      source: "Meta-análise de 47 estudos com 3515 participantes confirma redução significativa em sintomas de ansiedade e depressão com programas de mindfulness.",
+      sourceLevel: "Verificação multi-fonte",
+      fontes: [
+        { tipo: "cientifica", titulo: "Meditation Programs for Psychological Stress and Well-being (JAMA, 2014)", url: "https://doi.org/10.1001/jamainternmed.2013.13018" },
+        { tipo: "jornalistica", titulo: "Meditação reduz ansiedade e depressão, aponta estudo", url: "https://g1.globo.com/ciencia-e-saude/" },
+      ],
     },
     {
       id: 2,
@@ -61,9 +55,11 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       confianca: 0.75,
       displayScore: 50,
       displayColor: "yellow",
-      source:
-        "Psychiatry Research: Neuroimaging - Harvard/Massachusetts General Hospital (2011)",
-      sourceLevel: "Nível 1 - Artigo Científico (Estudo Experimental)",
+      source: "O estudo original observou mudanças em participantes específicos, mas replicações posteriores mostraram resultados mistos. A afirmação é válida com ressalvas.",
+      sourceLevel: "Verificação multi-fonte",
+      fontes: [
+        { tipo: "cientifica", titulo: "Mindfulness practice leads to increases in regional brain gray matter density (Psychiatry Research, 2011)", url: "https://doi.org/10.1016/j.pscychresns.2010.08.006" },
+      ],
     },
     {
       id: 3,
@@ -73,9 +69,11 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       confianca: 0.88,
       displayScore: 88,
       displayColor: "green",
-      source:
-        "Health Psychology Review - Meta-análise sobre estresse e meditação (2017)",
-      sourceLevel: "Nível 1 - Artigo Científico (Meta-análise)",
+      source: "Meta-análise de 2017 com 1012 participantes confirma redução nos níveis de cortisol salivar em praticantes regulares.",
+      sourceLevel: "Verificação multi-fonte",
+      fontes: [
+        { tipo: "cientifica", titulo: "Effect of mindfulness-based stress reduction on cortisol levels (Health Psychology Review, 2017)", url: "https://doi.org/10.1080/17437199.2017.1307651" },
+      ],
     },
     {
       id: 4,
@@ -85,9 +83,9 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       confianca: 0.95,
       displayScore: 5,
       displayColor: "red",
-      source:
-        "Não há evidências científicas que sustentem essa afirmação. O próprio vídeo reconhece isso como exagero.",
-      sourceLevel: "Sem evidências científicas",
+      source: "Não há evidências científicas que sustentem essa afirmação. Organizações de saúde como a OMS e o INCA classificam afirmações de cura alternativa do câncer como desinformação perigosa.",
+      sourceLevel: "Verificação multi-fonte",
+      fontes: [],
     },
     {
       id: 5,
@@ -97,9 +95,11 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       confianca: 0.85,
       displayScore: 85,
       displayColor: "green",
-      source:
-        "JAMA Internal Medicine (2015) - Estudo randomizado controlado com 49 participantes",
-      sourceLevel: "Nível 1 - Artigo Científico (Ensaio Clínico Randomizado)",
+      source: "Ensaio clínico randomizado com 49 adultos idosos com distúrbios de sono moderados confirma benefícios do mindfulness.",
+      sourceLevel: "Verificação multi-fonte",
+      fontes: [
+        { tipo: "cientifica", titulo: "Mindfulness Meditation and Improvement in Sleep Quality (JAMA Internal Medicine, 2015)", url: "https://doi.org/10.1001/jamainternmed.2014.8081" },
+      ],
     },
   ],
   overallScore: 64,
@@ -109,7 +109,7 @@ export const loadingSteps = [
   { label: "Extraindo informações do vídeo...", duration: 1200 },
   { label: "Transcrevendo áudio com IA...", duration: 2000 },
   { label: "Identificando afirmações-chave...", duration: 1500 },
-  { label: "Buscando artigos científicos...", duration: 2500 },
-  { label: "Cruzando dados com fontes confiáveis...", duration: 2000 },
+  { label: "Consultando bases de dados científicas e jornalísticas...", duration: 2500 },
+  { label: "Validando afirmações com as evidências encontradas...", duration: 2000 },
   { label: "Gerando relatório de validação...", duration: 1000 },
 ];
