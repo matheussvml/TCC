@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, XCircle, BookOpen, AlertTriangle, Gauge } from "lucide-react";
+import { CheckCircle2, XCircle, BookOpen, AlertTriangle, AlertCircle, HelpCircle, Gauge } from "lucide-react";
 import type { Claim } from "@/data/mockData";
 
 interface ClaimCardProps {
@@ -8,73 +8,91 @@ interface ClaimCardProps {
   index: number;
 }
 
-function VeredictoBadge({ veredicto, status }: { veredicto?: string; status: Claim["status"] }) {
-  if (veredicto === "VERDADEIRO") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        Verdadeiro
-      </span>
-    );
-  }
-  if (veredicto === "PARCIALMENTE VERDADEIRO") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-50 px-3 py-1 text-xs font-semibold text-yellow-700">
-        <AlertTriangle className="h-3.5 w-3.5" />
-        Parcialmente Verdadeiro
-      </span>
-    );
-  }
-  if (veredicto === "FALSO") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-        <XCircle className="h-3.5 w-3.5" />
-        Falso
-      </span>
-    );
-  }
-  if (veredicto === "SEM EMBASAMENTO SUFICIENTE") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-        <AlertTriangle className="h-3.5 w-3.5" />
-        Sem Embasamento
-      </span>
-    );
-  }
-  return status === "validated" ? (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-      <CheckCircle2 className="h-3.5 w-3.5" />
-      Validado
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-      <XCircle className="h-3.5 w-3.5" />
-      Sem Evidências
-    </span>
-  );
+type VerdictConfig = {
+  badge: string;
+  icon: React.ReactNode;
+  label: string;
+  sourceBg: string;
+  sourceText: string;
+  sourceIcon: React.ReactNode;
+};
+
+function getVerdictConfig(veredicto?: string, status?: Claim["status"]): VerdictConfig {
+  if (veredicto === "VERDADEIRO") return {
+    badge: "bg-green-50 text-green-700",
+    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+    label: "Verdadeiro",
+    sourceBg: "bg-green-50",
+    sourceText: "text-green-700",
+    sourceIcon: <BookOpen className="h-3.5 w-3.5 text-green-500" />,
+  };
+  if (veredicto === "PARCIALMENTE VERDADEIRO") return {
+    badge: "bg-yellow-50 text-yellow-700",
+    icon: <AlertCircle className="h-3.5 w-3.5" />,
+    label: "Parcialmente Verdadeiro",
+    sourceBg: "bg-yellow-50",
+    sourceText: "text-yellow-700",
+    sourceIcon: <AlertCircle className="h-3.5 w-3.5 text-yellow-500" />,
+  };
+  if (veredicto === "FALSO") return {
+    badge: "bg-red-50 text-red-700",
+    icon: <XCircle className="h-3.5 w-3.5" />,
+    label: "Falso",
+    sourceBg: "bg-red-50",
+    sourceText: "text-red-700",
+    sourceIcon: <XCircle className="h-3.5 w-3.5 text-red-500" />,
+  };
+  if (veredicto === "SEM EMBASAMENTO SUFICIENTE") return {
+    badge: "bg-gray-100 text-gray-600",
+    icon: <HelpCircle className="h-3.5 w-3.5" />,
+    label: "Sem Embasamento",
+    sourceBg: "bg-gray-50",
+    sourceText: "text-gray-700",
+    sourceIcon: <HelpCircle className="h-3.5 w-3.5 text-gray-500" />,
+  };
+  return status === "validated" ? {
+    badge: "bg-green-50 text-green-700",
+    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+    label: "Validado",
+    sourceBg: "bg-blue-50",
+    sourceText: "text-blue-700",
+    sourceIcon: <BookOpen className="h-3.5 w-3.5 text-blue-500" />,
+  } : {
+    badge: "bg-red-50 text-red-700",
+    icon: <XCircle className="h-3.5 w-3.5" />,
+    label: "Sem Evidências",
+    sourceBg: "bg-amber-50",
+    sourceText: "text-amber-700",
+    sourceIcon: <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />,
+  };
 }
 
-function ConfiancaBadge({ confianca }: { confianca?: number }) {
-  if (typeof confianca !== "number") return null;
-  const pct = Math.round(confianca * 100);
-  const color =
-    pct >= 75
-      ? "bg-emerald-50 text-emerald-700"
-      : pct >= 40
-      ? "bg-amber-50 text-amber-700"
-      : "bg-rose-50 text-rose-700";
+const displayColorClasses: Record<string, string> = {
+  green: "bg-emerald-50 text-emerald-700",
+  yellow: "bg-amber-50 text-amber-700",
+  red: "bg-rose-50 text-rose-700",
+  gray: "bg-gray-100 text-gray-600",
+};
+
+function DisplayScoreBadge({ score, color }: { score?: number; color?: string }) {
+  if (typeof score !== "number") return null;
+  const cls = color
+    ? (displayColorClasses[color] ?? displayColorClasses.gray)
+    : score >= 75
+    ? displayColorClasses.green
+    : score >= 40
+    ? displayColorClasses.yellow
+    : displayColorClasses.red;
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${color}`}
-    >
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${cls}`}>
       <Gauge className="h-3 w-3" />
-      {pct}% de confiança
+      {score}% de confiança
     </span>
   );
 }
 
 export default function ClaimCard({ claim, index }: ClaimCardProps) {
-  const isValid = claim.status === "validated";
+  const cfg = getVerdictConfig(claim.veredicto, claim.status);
   const claimText = claim.text?.trim();
   const hasText = claimText && claimText.length > 0;
 
@@ -84,10 +102,13 @@ export default function ClaimCard({ claim, index }: ClaimCardProps) {
       style={{ animationDelay: `${index * 100}ms` }}
     >
       <div className="p-5">
-        {/* Status + confiança */}
+        {/* Veredicto + score */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <VeredictoBadge veredicto={claim.veredicto} status={claim.status} />
-          <ConfiancaBadge confianca={claim.confianca} />
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${cfg.badge}`}>
+            {cfg.icon}
+            {cfg.label}
+          </span>
+          <DisplayScoreBadge score={claim.displayScore} color={claim.displayColor} />
         </div>
 
         {/* Texto da alegação */}
@@ -101,44 +122,22 @@ export default function ClaimCard({ claim, index }: ClaimCardProps) {
           </p>
         )}
 
-        {/* Explicação / fonte */}
-        <div
-          className={`mt-4 rounded-lg p-3 ${
-            isValid ? "bg-blue-50" : "bg-amber-50"
-          }`}
-        >
+        {/* Bloco de fonte */}
+        <div className={`mt-4 rounded-lg p-3 ${cfg.sourceBg}`}>
           <div className="mb-1 flex items-center gap-1.5">
-            {isValid ? (
-              <BookOpen className="h-3.5 w-3.5 text-blue-500" />
-            ) : (
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-            )}
-            <span
-              className={`text-xs font-semibold ${
-                isValid ? "text-blue-600" : "text-amber-600"
-              }`}
-            >
+            {cfg.sourceIcon}
+            <span className={`text-xs font-semibold ${cfg.sourceText}`}>
               {claim.sourceLevel}
             </span>
           </div>
-          <p
-            className={`text-xs leading-relaxed ${
-              isValid ? "text-blue-700" : "text-amber-700"
-            }`}
-          >
+          <p className={`text-xs leading-relaxed ${cfg.sourceText}`}>
             {claim.source}
           </p>
 
-          {/* Lista de fontes, se houver */}
           {Array.isArray(claim.fontes) && claim.fontes.length > 0 && (
             <ul className="mt-2 space-y-1 border-t border-current/10 pt-2">
               {claim.fontes.map((f, i) => (
-                <li
-                  key={i}
-                  className={`text-xs ${
-                    isValid ? "text-blue-700" : "text-amber-700"
-                  }`}
-                >
+                <li key={i} className={`text-xs ${cfg.sourceText}`}>
                   • {f}
                 </li>
               ))}

@@ -67,7 +67,10 @@ export default function ResultsSection({ result }: ResultsSectionProps) {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-4">
-              <ScoreBadge score={result.overallScore} />
+              <ScoreBadge
+                score={result.overallScore}
+                color={result.overallScore >= 70 ? "green" : result.overallScore >= 40 ? "yellow" : "red"}
+              />
               <span className="text-sm text-gray-500">
                 {totalCount} {totalCount === 1 ? "alegação analisada" : "alegações analisadas"}
               </span>
