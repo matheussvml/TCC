@@ -7,9 +7,12 @@ import {
   HelpCircle,
   BookOpen,
   Newspaper,
+  FlaskConical,
+  ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
-import type { Claim, FonteDetalhada } from "@/lib/scoring";
-import { getScoreDisplay, getVerdictLabel } from "@/lib/scoring";
+import type { Claim } from "@/lib/scoring";
+import { getScoreDisplay, getVerdictLabel, normalizeFontes } from "@/lib/scoring";
 
 interface ClaimCardProps {
   claim: Claim;
@@ -44,31 +47,111 @@ function VerdictIcon({ veredicto }: { veredicto?: string }) {
   return <Icon className={colorClass} style={{ width: 24, height: 24 }} />;
 }
 
-function ScoreChip({ displayScore, displayColor }: { displayScore?: number; displayColor?: string }) {
+function ScoreChip({
+  displayScore,
+  displayColor,
+}: {
+  displayScore?: number;
+  displayColor?: string;
+}) {
   if (typeof displayScore !== "number") return null;
   const { label, colorClass, bgClass } = getScoreDisplay(
     displayScore,
     displayColor as "green" | "yellow" | "red" | "gray" | undefined
   );
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${bgClass} ${colorClass}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${bgClass} ${colorClass}`}
+    >
       {label}
     </span>
   );
 }
 
-function FonteLink({ fonte }: { fonte: FonteDetalhada }) {
-  const Icon = fonte.tipo === "jornalistica" ? Newspaper : BookOpen;
+function FontesList({ fontes }: { fontes: { titulo: string; url: string }[] }) {
   return (
-    <a
-      href={fonte.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-start gap-2 text-xs text-blue-600 hover:underline"
-    >
-      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
-      <span>{fonte.titulo}</span>
-    </a>
+    <ul className="space-y-1">
+      {fontes.map((f, i) => (
+        <li key={i}>
+          <a
+            href={f.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-start gap-1 break-all text-sm hover:underline"
+          >
+            <ExternalLink className="mt-0.5 h-3 w-3 shrink-0" />
+            <span>{f.titulo}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SourcesSection({ claim }: { claim: Claim }) {
+  const journalistic = normalizeFontes(claim.fontes_jornalisticas);
+  const scientific = normalizeFontes(claim.fontes_cientificas);
+
+  // Fallback: if new fields absent, derive from legacy fontes array
+  const legacyJournalistic =
+    !journalistic.hasData && Array.isArray(claim.fontes)
+      ? claim.fontes
+          .filter((f) => f.tipo === "jornalistica")
+          .map(({ titulo, url }) => ({ titulo, url }))
+      : [];
+  const legacyScientific =
+    !scientific.hasData && Array.isArray(claim.fontes)
+      ? claim.fontes
+          .filter((f) => f.tipo === "cientifica")
+          .map(({ titulo, url }) => ({ titulo, url }))
+      : [];
+
+  const journalisticItems = journalistic.items.length > 0 ? journalistic.items : legacyJournalistic;
+  const scientificItems = scientific.items.length > 0 ? scientific.items : legacyScientific;
+
+  const hasJournalistic = journalistic.hasData || journalisticItems.length > 0;
+  const hasScientific = scientific.hasData || scientificItems.length > 0;
+
+  return (
+    <div className="mt-3 grid grid-cols-1 gap-3 border-t border-gray-100 pt-3 md:grid-cols-2">
+      {/* Checagem jornalística */}
+      <div className="rounded border border-blue-100 bg-blue-50 p-3">
+        <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-blue-600">
+          <Newspaper className="h-3.5 w-3.5" />
+          Checagens jornalísticas
+        </p>
+        {hasJournalistic ? (
+          <>
+            {journalisticItems.length > 0 ? (
+              <FontesList fontes={journalisticItems} />
+            ) : (
+              <p className="whitespace-pre-line text-sm text-blue-800">{journalistic.rawText}</p>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-gray-400">Nenhuma checagem jornalística encontrada</p>
+        )}
+      </div>
+
+      {/* Artigos científicos */}
+      <div className="rounded border border-purple-100 bg-purple-50 p-3">
+        <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-purple-600">
+          <FlaskConical className="h-3.5 w-3.5" />
+          Artigos científicos
+        </p>
+        {hasScientific ? (
+          <>
+            {scientificItems.length > 0 ? (
+              <FontesList fontes={scientificItems} />
+            ) : (
+              <p className="whitespace-pre-line text-sm text-purple-800">{scientific.rawText}</p>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-gray-400">Nenhum artigo científico encontrado</p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -77,13 +160,16 @@ export default function ClaimCard({ claim, index }: ClaimCardProps) {
   const claimText = claim.text?.trim();
   const hasText = claimText && claimText.length > 0;
 
-  const hasFontes = Array.isArray(claim.fontes) && claim.fontes.length > 0;
-  const hasJornalistica = hasFontes && claim.fontes!.some((f) => f.tipo === "jornalistica");
-  const hasCientifica = hasFontes && claim.fontes!.some((f) => f.tipo === "cientifica");
-  const hasFontesDetalhadas =
-    !hasFontes &&
-    claim.fontes_detalhadas &&
-    (claim.fontes_detalhadas.cientificas || claim.fontes_detalhadas.jornalisticas);
+  const journalistic = normalizeFontes(claim.fontes_jornalisticas);
+  const scientific = normalizeFontes(claim.fontes_cientificas);
+  const legacyHasJournalistic =
+    !journalistic.hasData && Array.isArray(claim.fontes) && claim.fontes.some((f) => f.tipo === "jornalistica");
+  const legacyHasScientific =
+    !scientific.hasData && Array.isArray(claim.fontes) && claim.fontes.some((f) => f.tipo === "cientifica");
+
+  const hasJournalistic = journalistic.hasData || legacyHasJournalistic;
+  const hasScientific = scientific.hasData || legacyHasScientific;
+  const hasAnySources = hasJournalistic || hasScientific;
 
   return (
     <div
@@ -103,6 +189,25 @@ export default function ClaimCard({ claim, index }: ClaimCardProps) {
           <ScoreChip displayScore={claim.displayScore} displayColor={claim.displayColor} />
         </div>
 
+        {/* Chips de tipo de fonte */}
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {hasJournalistic && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+              <Newspaper className="h-3 w-3" /> Checagem jornalística
+            </span>
+          )}
+          {hasScientific && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700">
+              <FlaskConical className="h-3 w-3" /> Fonte científica
+            </span>
+          )}
+          {!hasAnySources && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+              <AlertTriangle className="h-3 w-3" /> Verificação automática
+            </span>
+          )}
+        </div>
+
         {/* Texto da alegação */}
         {hasText ? (
           <p className="text-sm font-medium leading-relaxed text-gray-800">
@@ -119,59 +224,8 @@ export default function ClaimCard({ claim, index }: ClaimCardProps) {
           <p className="mt-3 text-xs leading-relaxed text-gray-600">{claim.source}</p>
         )}
 
-        {/* Fontes como links clicáveis */}
-        {hasFontes && (
-          <div className="mt-3 space-y-1.5 border-t border-gray-100 pt-3">
-            {claim.fontes!.map((f, i) => (
-              <FonteLink key={i} fonte={f} />
-            ))}
-          </div>
-        )}
-
-        {/* Fallback: fontes_detalhadas em texto */}
-        {hasFontesDetalhadas && (
-          <div className="mt-3 space-y-3 border-t border-gray-100 pt-3 text-xs text-gray-600">
-            {claim.fontes_detalhadas!.cientificas && (
-              <div>
-                <p className="mb-1 flex items-center gap-1 font-semibold text-gray-700">
-                  <BookOpen className="h-3.5 w-3.5" /> Fontes científicas
-                </p>
-                <p className="whitespace-pre-wrap leading-relaxed">
-                  {claim.fontes_detalhadas!.cientificas}
-                </p>
-              </div>
-            )}
-            {claim.fontes_detalhadas!.jornalisticas && (
-              <div>
-                <p className="mb-1 flex items-center gap-1 font-semibold text-gray-700">
-                  <Newspaper className="h-3.5 w-3.5" /> Checagem jornalística
-                </p>
-                <p className="whitespace-pre-wrap leading-relaxed">
-                  {claim.fontes_detalhadas!.jornalisticas}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Chips de tipo de fonte */}
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {hasCientifica && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs text-blue-700">
-              <BookOpen className="h-3 w-3" /> Fonte científica
-            </span>
-          )}
-          {hasJornalistica && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-0.5 text-xs text-purple-700">
-              <Newspaper className="h-3 w-3" /> Checagem jornalística
-            </span>
-          )}
-          {!hasFontes && !hasFontesDetalhadas && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs text-amber-700">
-              ⚠ Verificação automática
-            </span>
-          )}
-        </div>
+        {/* Seção de fontes dividida em duas colunas */}
+        <SourcesSection claim={claim} />
       </div>
     </div>
   );
