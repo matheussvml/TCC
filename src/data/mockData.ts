@@ -4,6 +4,8 @@ export interface Claim {
   status: "validated" | "invalid";
   veredicto?: string;
   confianca?: number;
+  displayScore?: number;
+  displayColor?: "green" | "yellow" | "red" | "gray";
   source: string;
   sourceLevel: string;
   sourceUrl?: string;
@@ -44,6 +46,10 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       id: 1,
       text: "Programas de meditação podem reduzir significativamente os níveis de ansiedade e depressão.",
       status: "validated",
+      veredicto: "VERDADEIRO",
+      confianca: 0.92,
+      displayScore: 92,
+      displayColor: "green",
       source: "JAMA Internal Medicine (2014) - Meta-análise de 47 estudos",
       sourceLevel: "Nível 1 - Artigo Científico (Revisão Sistemática)",
     },
@@ -51,6 +57,10 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       id: 2,
       text: "8 semanas de meditação podem alterar a estrutura do cérebro, aumentando a densidade de matéria cinzenta no hipocampo.",
       status: "validated",
+      veredicto: "PARCIALMENTE VERDADEIRO",
+      confianca: 0.75,
+      displayScore: 50,
+      displayColor: "yellow",
       source:
         "Psychiatry Research: Neuroimaging - Harvard/Massachusetts General Hospital (2011)",
       sourceLevel: "Nível 1 - Artigo Científico (Estudo Experimental)",
@@ -59,6 +69,10 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       id: 3,
       text: "Praticantes regulares de meditação apresentam níveis significativamente menores de cortisol.",
       status: "validated",
+      veredicto: "VERDADEIRO",
+      confianca: 0.88,
+      displayScore: 88,
+      displayColor: "green",
       source:
         "Health Psychology Review - Meta-análise sobre estresse e meditação (2017)",
       sourceLevel: "Nível 1 - Artigo Científico (Meta-análise)",
@@ -67,6 +81,10 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       id: 4,
       text: "A meditação pode curar o câncer.",
       status: "invalid",
+      veredicto: "FALSO",
+      confianca: 0.95,
+      displayScore: 5,
+      displayColor: "red",
       source:
         "Não há evidências científicas que sustentem essa afirmação. O próprio vídeo reconhece isso como exagero.",
       sourceLevel: "Sem evidências científicas",
@@ -75,12 +93,16 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
       id: 5,
       text: "Adultos com problemas de sono que praticam mindfulness apresentam melhoras significativas na qualidade do sono.",
       status: "validated",
+      veredicto: "VERDADEIRO",
+      confianca: 0.85,
+      displayScore: 85,
+      displayColor: "green",
       source:
         "JAMA Internal Medicine (2015) - Estudo randomizado controlado com 49 participantes",
       sourceLevel: "Nível 1 - Artigo Científico (Ensaio Clínico Randomizado)",
     },
   ],
-  overallScore: 85,
+  overallScore: 64,
 };
 
 export const loadingSteps = [
