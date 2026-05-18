@@ -1,5 +1,10 @@
 export type DisplayColor = "green" | "yellow" | "red" | "gray";
 
+export interface FonteItem {
+  titulo: string;
+  url: string;
+}
+
 export interface FonteDetalhada {
   tipo: "jornalistica" | "cientifica";
   titulo: string;
@@ -14,7 +19,7 @@ export interface FontesDetalhadas {
 export interface Claim {
   id: number;
   text: string;
-  status: "validated" | "invalid";
+  status: "validated" | "partial" | "invalid";
   veredicto?: string;
   confianca?: number;
   displayScore?: number;
@@ -22,8 +27,26 @@ export interface Claim {
   source: string;
   sourceLevel: string;
   sourceUrl?: string;
+  fontes_jornalisticas?: FonteItem[] | string;
+  fontes_cientificas?: FonteItem[] | string;
   fontes?: FonteDetalhada[];
   fontes_detalhadas?: FontesDetalhadas;
+}
+
+export interface NormalizedFontes {
+  items: FonteItem[];
+  rawText: string;
+  hasData: boolean;
+}
+
+export function normalizeFontes(fontes: FonteItem[] | string | undefined): NormalizedFontes {
+  if (!fontes || (Array.isArray(fontes) && fontes.length === 0) || fontes === "") {
+    return { items: [], rawText: "", hasData: false };
+  }
+  if (typeof fontes === "string") {
+    return { items: [], rawText: fontes, hasData: true };
+  }
+  return { items: fontes, rawText: "", hasData: fontes.length > 0 };
 }
 
 export interface FactCheckResult {
