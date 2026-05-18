@@ -23,12 +23,20 @@ export default function ScoreBadge({ score, color }: ScoreBadgeProps) {
     ? colorClasses.yellow
     : colorClasses.red;
 
+  const isVeryLow = score < 10;
+
   return (
     <div
       className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold ${resolved}`}
     >
-      <span className="text-2xl font-extrabold">{score}%</span>
-      <span>de confiabilidade</span>
+      {isVeryLow ? (
+        <span className="font-extrabold">Informação não confiável</span>
+      ) : (
+        <>
+          <span className="text-2xl font-extrabold">{score}%</span>
+          <span>de confiabilidade</span>
+        </>
+      )}
     </div>
   );
 }
