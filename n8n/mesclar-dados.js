@@ -2,6 +2,12 @@
 // Monta o prompt de validação e as listas de fontes COM LINK REAL.
 // As URLs vêm direto do OpenAlex e da Tavily — o LLM nunca inventa link.
 
+// O plano free da Groq dá 8.000 tokens/minuto e as 5 alegações são validadas
+// em paralelo — por isso o prompt precisa ser enxuto. Estes dois números são
+// o freio: mais fontes ou resumos mais longos derrubam tudo com 429.
+const MAX_FONTES_PROMPT = 3;
+const MAX_RESUMO_CHARS = 150;
+
 const alegacao = $('Parsear alegações').item.json;
 
 // ---- Camada 1: OpenAlex → artigos científicos (título + DOI) ----
@@ -18,7 +24,6 @@ try {
 
 // ---- Camada 2: Tavily/Lupa → checagens jornalísticas (título + URL) ----
 let fontes_jornalisticas = [];
-let resumoTavily = '';
 try {
   const lupaData = $('Lupa — Checagem jornalística').item.json;
 
@@ -33,26 +38,26 @@ try {
         titulo: r.title || 'Sem título',
         url: r.url || '',
         dominio,
-        resumo: (r.content || r.snippet || '').substring(0, 300),
+        resumo: (r.content || r.snippet || '').substring(0, MAX_RESUMO_CHARS),
       };
     })
     .filter((f) => f.url);
-
-  if (lupaData.answer) {
-    resumoTavily = `\n\nResumo automático das checagens: ${lupaData.answer}`;
-  }
 } catch (e) {}
 
 // ---- Blocos de texto do prompt — agora com as URLs, para o Groq citá-las ----
 const artigos = fontes_cientificas.length
-  ? fontes_cientificas.map((f) => `- ${f.titulo}\n  Fonte: ${f.url}`).join('\n')
+  ? fontes_cientificas
+      .slice(0, MAX_FONTES_PROMPT)
+      .map((f) => `- ${f.titulo}\n  Fonte: ${f.url}`)
+      .join('\n')
   : 'Nenhum artigo científico encontrado.';
 
 const checagens = fontes_jornalisticas.length
   ? fontes_jornalisticas
+      .slice(0, MAX_FONTES_PROMPT)
       .map((f) => `- [${f.dominio}] ${f.titulo}\n  ${f.resumo}...\n  Fonte: ${f.url}`)
-      .join('\n\n') + resumoTavily
-  : 'Nenhuma checagem jornalística encontrada.' + resumoTavily;
+      .join('\n\n')
+  : 'Nenhuma checagem jornalística encontrada.';
 
 const prompt_validar = `Analise a alegação considerando MÚLTIPLAS FONTES de verificação:
 
