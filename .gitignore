@@ -51,3 +51,6 @@ next-env.d.ts
 # Documentacao de trabalho: fica na maquina, fora do repositorio
 *.md
 !README.md
+
+# Configuracao local de ferramentas de IA
+.claude/
