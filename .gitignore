@@ -47,3 +47,7 @@ cookies_yt_min.txt
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Documentacao de trabalho: fica na maquina, fora do repositorio
+*.md
+!README.md
