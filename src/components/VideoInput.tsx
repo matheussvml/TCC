@@ -1,10 +1,12 @@
 "use client";
 
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Upload, X } from "lucide-react";
 
 interface VideoInputProps {
   url: string;
   onUrlChange: (url: string) => void;
+  file: File | null;
+  onFileChange: (file: File | null) => void;
   onSubmit: () => void;
   isLoading: boolean;
 }
@@ -12,6 +14,8 @@ interface VideoInputProps {
 export default function VideoInput({
   url,
   onUrlChange,
+  file,
+  onFileChange,
   onSubmit,
   isLoading,
 }: VideoInputProps) {
@@ -21,8 +25,9 @@ export default function VideoInput({
         Verifique os fatos de qualquer vídeo
       </h2>
       <p className="mx-auto mt-3 max-w-xl text-base text-gray-500">
-        Cole o link de um vídeo e nossa IA irá transcrever, identificar as
-        afirmações e validá-las com fontes científicas e jornalísticas.
+        Cole o link de um vídeo ou envie o arquivo. Nossa IA irá transcrever,
+        identificar as afirmações e validá-las com fontes científicas e
+        jornalísticas.
       </p>
 
       <form
@@ -39,13 +44,13 @@ export default function VideoInput({
             value={url}
             onChange={(e) => onUrlChange(e.target.value)}
             placeholder="Cole aqui o link do vídeo (YouTube, TikTok, etc)..."
-            className="w-full rounded-xl border border-gray-300 bg-white py-4 pl-12 pr-4 text-base text-gray-900 shadow-sm outline-none transition-all placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            disabled={isLoading}
+            className="w-full rounded-xl border border-gray-300 bg-white py-4 pl-12 pr-4 text-base text-gray-900 shadow-sm outline-none transition-all placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+            disabled={isLoading || file !== null}
           />
         </div>
         <button
           type="submit"
-          disabled={isLoading || url.trim().length === 0 || undefined}
+          disabled={isLoading || (url.trim().length === 0 && !file) || undefined}
           className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {isLoading ? (
@@ -61,6 +66,34 @@ export default function VideoInput({
           )}
         </button>
       </form>
+
+      {file ? (
+        <div className="mt-4 flex items-center justify-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <Upload className="h-4 w-4 shrink-0" />
+          <span className="truncate">{file.name}</span>
+          <button
+            type="button"
+            onClick={() => onFileChange(null)}
+            disabled={isLoading}
+            className="rounded-full p-1 text-blue-600 transition-colors hover:bg-blue-100 disabled:opacity-50"
+            aria-label="Remover arquivo"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <label className="mt-4 inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-blue-600">
+          <Upload className="h-4 w-4" />
+          ou envie um arquivo de vídeo ou áudio do seu computador
+          <input
+            type="file"
+            accept="video/*,audio/*"
+            className="sr-only"
+            disabled={isLoading}
+            onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+          />
+        </label>
+      )}
     </section>
   );
 }

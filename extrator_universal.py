@@ -87,6 +87,10 @@ def main():
             "no_warnings": True,
             "noprogress": True,
             "logger": StderrLogger(),
+            # Clients que não exigem PO token — contornam parte da checagem de bot do YouTube
+            "extractor_args": {
+                "youtube": {"player_client": ["android_vr", "tv", "web_safari", "web"]}
+            },
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",

@@ -6,6 +6,51 @@ import path from "path";
 const BACKEND_URL = process.env.BACKEND_URL || "";
 
 export async function POST(request: Request) {
+  // Upload de arquivo: manda direto pro Whisper do Groq, sem yt-dlp
+  // ponytail: na Vercel o body de uma route handler é limitado a 4.5 MB.
+  // Para arquivos maiores, configure NEXT_PUBLIC_BACKEND_URL e o browser
+  // posta direto no Flask do Render (ver page.tsx), sem passar por aqui.
+  if ((request.headers.get("content-type") || "").startsWith("multipart/form-data")) {
+    const file = (await request.formData()).get("file");
+
+    if (!(file instanceof File)) {
+      return Response.json(
+        { status: "error", message: "Arquivo não enviado." },
+        { status: 400 }
+      );
+    }
+
+    const form = new FormData();
+    form.append("file", file);
+    form.append("model", "whisper-large-v3");
+    form.append("language", "pt");
+    form.append("response_format", "text");
+
+    const res = await fetch(
+      "https://api.groq.com/openai/v1/audio/transcriptions",
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+        body: form,
+      }
+    );
+    const text = await res.text();
+
+    if (!res.ok) {
+      return Response.json(
+        { status: "error", message: `Falha na transcrição: ${text}` },
+        { status: res.status }
+      );
+    }
+
+    return Response.json({
+      status: "success",
+      title: file.name,
+      thumbnail: "",
+      text: text.trim(),
+    });
+  }
+
   const body = await request.json();
   const { url } = body;
 

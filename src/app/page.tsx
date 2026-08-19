@@ -10,9 +10,38 @@ import type { AnalysisResult } from "@/data/mockData";
 
 const API_URL = "/api/transcribe";
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
+// Se configurado, o upload vai direto pro Flask do Render — pula o limite de 4.5 MB da Vercel
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+const MAX_UPLOAD_MB = 25; // limite do Whisper no Groq
+
+// Tolera resposta vazia ou não-JSON (webhook inativo, erro do n8n, timeout)
+async function postJson(
+  input: string,
+  init: RequestInit
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<Record<string, any>> {
+  try {
+    const res = await fetch(input, init);
+    const body = await res.text();
+
+    try {
+      return JSON.parse(body);
+    } catch {
+      return {
+        status: "error",
+        message: body.trim()
+          ? `Resposta inesperada do servidor (HTTP ${res.status}): ${body.slice(0, 200)}`
+          : `O servidor respondeu vazio (HTTP ${res.status}). Verifique a execução no n8n.`,
+      };
+    }
+  } catch (err) {
+    return { status: "error", message: (err as Error).message };
+  }
+}
 
 export default function Home() {
   const [url, setUrl] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -35,7 +64,14 @@ export default function Home() {
   }, []);
 
   const handleAnalyze = useCallback(async () => {
-    if (!url.trim() || isLoading) return;
+    if ((!url.trim() && !file) || isLoading) return;
+
+    if (file && file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      setError(
+        `Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)} MB). O limite é ${MAX_UPLOAD_MB} MB — envie só o áudio ou um trecho do vídeo.`
+      );
+      return;
+    }
 
     setResult(null);
     setError(null);
@@ -44,13 +80,23 @@ export default function Home() {
 
     simulateSteps();
 
-    const transcribeData = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: url.trim() }),
-    })
-      .then((res) => res.json())
-      .catch((err) => ({ status: "error", message: err.message }));
+    const transcribeData = file
+      ? await postJson(
+          BACKEND_URL ? `${BACKEND_URL}/api/transcribe/upload` : API_URL,
+          {
+            method: "POST",
+            body: (() => {
+              const form = new FormData();
+              form.append("file", file);
+              return form;
+            })(),
+          }
+        )
+      : await postJson(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: url.trim() }),
+        });
 
     if (transcribeData.status !== "success") {
       setIsLoading(false);
@@ -58,17 +104,15 @@ export default function Home() {
       return;
     }
 
-    const n8nData = await fetch(N8N_WEBHOOK_URL, {
+    const n8nData = await postJson(N8N_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         transcricao: transcribeData.text,
         videoTitle: transcribeData.title || "",
-        videoUrl: url.trim(),
+        videoUrl: file ? `arquivo:${file.name}` : url.trim(),
       }),
-    })
-      .then((res) => res.json())
-      .catch((err) => ({ status: "error", message: err.message }));
+    });
 
     setIsLoading(false);
 
@@ -106,7 +150,7 @@ export default function Home() {
       claims,
       overallScore: overallScore || 0,
     });
-  }, [url, isLoading, simulateSteps]);
+  }, [url, file, isLoading, simulateSteps]);
 
   return (
     <>
@@ -116,6 +160,8 @@ export default function Home() {
         <VideoInput
           url={url}
           onUrlChange={setUrl}
+          file={file}
+          onFileChange={setFile}
           onSubmit={handleAnalyze}
           isLoading={isLoading}
         />

@@ -49,7 +49,8 @@ def transcribe():
             # Usa clientes mobile/tv que geralmente burlam a checagem de bot
             "extractor_args": {
                 "youtube": {
-                    "player_client": ["tv", "ios", "android", "web"],
+                    # android_vr e web_safari não exigem PO token; ios/android puros passaram a exigir
+                    "player_client": ["android_vr", "tv", "web_safari", "web"],
                 }
             },
             "postprocessors": [{
@@ -115,6 +116,38 @@ def transcribe():
             "status": "error",
             "message": str(e)
         }), 500
+
+
+@app.route("/api/transcribe/upload", methods=["POST"])
+def transcribe_upload():
+    """Recebe o arquivo de áudio/vídeo do browser e transcreve direto — sem yt-dlp."""
+    f = request.files.get("file")
+
+    if not f:
+        return jsonify({"status": "error", "message": "Arquivo não enviado."}), 400
+
+    if not GROQ_API_KEY:
+        return jsonify({"status": "error", "message": "GROQ_API_KEY não configurada."}), 500
+
+    try:
+        from groq import Groq
+
+        transcription = Groq(api_key=GROQ_API_KEY).audio.transcriptions.create(
+            file=(f.filename, f.stream.read()),
+            model="whisper-large-v3",
+            language="pt",
+            response_format="text",
+        )
+
+        return jsonify({
+            "status": "success",
+            "title": f.filename,
+            "thumbnail": "",
+            "text": transcription.strip(),
+        })
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":
