@@ -16,6 +16,69 @@ CORS(app)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 
+def resolver_cookies(video_url):
+    """Escolhe o cookie da plataforma do link.
+
+    COOKIES_YOUTUBE / COOKIES_INSTAGRAM / COOKIES_TIKTOK (base64) têm prioridade
+    sobre o COOKIES_CONTENT genérico e sobre o YT_COOKIES em texto puro. Cookie
+    separado por plataforma evita mandar sessão do Instagram pro YouTube, o que
+    só aumenta a chance de bloqueio.
+    """
+    import base64
+
+    url = (video_url or "").lower()
+    if "instagram." in url:
+        plataforma = "INSTAGRAM"
+    elif "tiktok." in url:
+        plataforma = "TIKTOK"
+    else:
+        plataforma = "YOUTUBE"
+
+    for var in (f"COOKIES_{plataforma}", "COOKIES_CONTENT"):
+        conteudo = os.environ.get(var)
+        if conteudo:
+            destino = os.path.join(
+                tempfile.gettempdir(), f"cookies_{uuid.uuid4().hex[:8]}.txt"
+            )
+            with open(destino, "wb") as f:
+                f.write(base64.b64decode(conteudo))
+            return destino
+
+    # Compatibilidade: YT_COOKIES guardava o conteúdo em texto puro
+    texto = os.environ.get("YT_COOKIES", "")
+    if texto:
+        destino = os.path.join(
+            tempfile.gettempdir(), f"cookies_{uuid.uuid4().hex[:8]}.txt"
+        )
+        with open(destino, "w", encoding="utf-8") as f:
+            f.write(texto)
+        return destino
+
+    return None
+
+
+def explicar_erro(erro, video_url):
+    """Traduz falhas conhecidas do yt-dlp em instrução acionável."""
+    e = str(erro).lower()
+
+    if "sign in to confirm" in e or "not a bot" in e or "confirm you" in e:
+        return ("O YouTube exigiu verificação de que não é um robô. O servidor está "
+                "sem cookies válidos. Configure COOKIES_YOUTUBE ou envie o arquivo "
+                "do vídeo pelo botão de upload.")
+    if "login required" in e or "login_required" in e or "requires authentication" in e:
+        return ("O Instagram exigiu login para este conteúdo. Configure "
+                "COOKIES_INSTAGRAM com uma sessão ativa ou envie o arquivo por upload.")
+    if "rate-limit" in e or "rate limit" in e or "429" in e:
+        return ("A plataforma limitou temporariamente os acessos deste servidor. "
+                "Tente de novo em alguns minutos ou envie o arquivo por upload.")
+    if "403" in e or "forbidden" in e:
+        return ("A plataforma recusou o download (403): conteúdo protegido ou "
+                "cookies vencidos. O upload do arquivo contorna isso.")
+    if "private" in e or "unavailable" in e:
+        return "Vídeo indisponível, privado ou removido. Confira o link."
+    return str(erro)
+
+
 @app.route("/api/transcribe", methods=["POST"])
 def transcribe():
     data = request.get_json()
@@ -53,33 +116,48 @@ def transcribe():
                     "player_client": ["android_vr", "tv", "web_safari", "web"],
                 }
             },
-            "postprocessors": [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "32",
-            }],
+            # Sem postprocessor de ffmpeg: o Whisper aceita m4a, webm e mp4 direto.
+            # Converter pra mp3 32kbps só gastava tempo e degradava o áudio.
         }
 
-        # Suporte opcional a cookies via variável de ambiente (conteúdo do cookies.txt)
-        cookies_content = os.environ.get("YT_COOKIES", "")
-        if cookies_content:
-            cookies_path = os.path.join(temp_dir, f"cookies_{uuid.uuid4().hex[:8]}.txt")
-            with open(cookies_path, "w", encoding="utf-8") as f:
-                f.write(cookies_content)
-            ydl_opts["cookiefile"] = cookies_path
+        cookies_path = resolver_cookies(video_url)
+
+        # Cookie fica para a segunda tentativa: sessão vencida faz a plataforma
+        # recusar downloads que passariam sem cookie nenhum.
+        tentativas = [("sem cookies", {})]
+        if cookies_path:
+            tentativas.append(("cookies de arquivo", {"cookiefile": cookies_path}))
 
         video_title = ""
         video_thumbnail = ""
+        final_audio = None
+        info = None
+        ultimo_erro = None
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-            if info:
-                video_title = info.get("title", "")
-                video_thumbnail = info.get("thumbnail", "")
+        for descricao, extra in tentativas:
+            try:
+                with yt_dlp.YoutubeDL({**ydl_opts, **extra}) as ydl:
+                    info = ydl.extract_info(video_url, download=True)
+                    if info:
+                        video_title = info.get("title", "")
+                        video_thumbnail = info.get("thumbnail", "")
+                        final_audio = ydl.prepare_filename(info)
+                app.logger.info("transcribe: sucesso com %s", descricao)
+                break
+            except Exception as err:
+                ultimo_erro = err
+                app.logger.warning("transcribe: falhou com %s -> %s", descricao, str(err)[:150])
 
-        final_audio = audio_path + ".mp3"
+        if info is None:
+            raise ultimo_erro or Exception("Não foi possível baixar o áudio.")
 
-        if not os.path.exists(final_audio):
+        # A extensão depende do formato servido pela plataforma (m4a, webm, opus…)
+        if not final_audio or not os.path.exists(final_audio):
+            candidatos = [os.path.join(temp_dir, f)
+                          for f in os.listdir(temp_dir) if f.startswith(audio_filename)]
+            final_audio = candidatos[0] if candidatos else None
+
+        if not final_audio or not os.path.exists(final_audio):
             return jsonify({
                 "status": "error",
                 "message": "Falha ao baixar o áudio. Verifique se a URL é válida e o vídeo é público."
@@ -107,14 +185,16 @@ def transcribe():
         })
 
     except Exception as e:
-        for ext in [".mp3", ".m4a", ".webm", ".opus"]:
-            path = audio_path + ext
-            if os.path.exists(path):
-                os.remove(path)
+        for f in os.listdir(temp_dir):
+            if f.startswith(audio_filename):
+                try:
+                    os.remove(os.path.join(temp_dir, f))
+                except OSError:
+                    pass
 
         return jsonify({
             "status": "error",
-            "message": str(e)
+            "message": explicar_erro(e, video_url)
         }), 500
 
 

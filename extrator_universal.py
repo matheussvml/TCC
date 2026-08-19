@@ -12,6 +12,97 @@ import json
 import tempfile
 import uuid
 
+
+def resolver_cookies(video_url, script_dir):
+    """Escolhe o arquivo de cookies adequado à plataforma do link.
+
+    Ordem de busca, da mais específica para a mais genérica:
+      1. COOKIES_YOUTUBE / COOKIES_INSTAGRAM / COOKIES_TIKTOK (base64) — por plataforma
+      2. COOKIES_CONTENT (base64) — genérico, mantido por compatibilidade
+      3. COOKIES_FILE apontando para um arquivo
+      4. cookies_youtube.txt / cookies_instagram.txt / cookies.txt na pasta do script
+
+    Retorna (caminho, eh_temporario). Cookie por plataforma existe porque uma
+    sessão do Instagram não serve pro YouTube e vice-versa: misturar os dois num
+    arquivo só faz o yt-dlp mandar cookie de mais e aumentar a chance de bloqueio.
+    """
+    import base64
+
+    url = (video_url or "").lower()
+    if "instagram." in url:
+        plataforma = "instagram"
+    elif "tiktok." in url:
+        plataforma = "tiktok"
+    elif "youtube." in url or "youtu.be" in url:
+        plataforma = "youtube"
+    else:
+        plataforma = ""
+
+    for var in ([f"COOKIES_{plataforma.upper()}"] if plataforma else []) + ["COOKIES_CONTENT"]:
+        conteudo = os.environ.get(var)
+        if conteudo:
+            destino = os.path.join(
+                tempfile.gettempdir(), f"cookies_{uuid.uuid4().hex[:8]}.txt"
+            )
+            with open(destino, "wb") as f:
+                f.write(base64.b64decode(conteudo))
+            return destino, True
+
+    candidatos = [os.environ.get("COOKIES_FILE")]
+    if plataforma:
+        candidatos.append(os.path.join(script_dir, f"cookies_{plataforma}.txt"))
+    candidatos.append(os.path.join(script_dir, "cookies.txt"))
+
+    for caminho in candidatos:
+        if caminho and os.path.exists(caminho):
+            return caminho, False
+
+    return None, False
+
+
+def explicar_erro(erro, video_url):
+    """Traduz falhas conhecidas do yt-dlp em instrução acionável.
+
+    Sem isso o usuário recebe o traceback cru e não sabe que o problema é
+    cookie vencido — que é a causa da maioria absoluta das falhas por link.
+    """
+    e = str(erro).lower()
+    url = (video_url or "").lower()
+    eh_instagram = "instagram." in url
+
+    if "sign in to confirm" in e or "not a bot" in e or "confirm you" in e:
+        return (
+            "O YouTube exigiu verificação de que não é um robô. Isso acontece "
+            "quando o servidor não tem cookies válidos. Exporte um cookies.txt "
+            "logado e configure COOKIES_YOUTUBE, ou envie o arquivo do vídeo "
+            "diretamente pelo botão de upload."
+        )
+    if "login required" in e or "login_required" in e or "requires authentication" in e:
+        return (
+            "O Instagram exigiu login para acessar este conteúdo. Configure "
+            "COOKIES_INSTAGRAM com um cookies.txt de sessão ativa, ou envie o "
+            "arquivo do vídeo diretamente pelo botão de upload."
+        )
+    if "rate-limit" in e or "rate limit" in e or "429" in e:
+        return (
+            "A plataforma limitou temporariamente os acessos deste servidor. "
+            "Tente novamente em alguns minutos ou envie o arquivo por upload."
+        )
+    if "403" in e or "forbidden" in e:
+        return (
+            "A plataforma recusou o download deste vídeo (403). Conteúdo "
+            "protegido ou cookies vencidos. O upload do arquivo contorna isso."
+        )
+    if "private" in e or "unavailable" in e:
+        return "Vídeo indisponível, privado ou removido. Confira o link."
+    if eh_instagram:
+        return (
+            f"Não foi possível baixar do Instagram: {erro}. O upload do arquivo "
+            "é o caminho mais confiável para esta plataforma."
+        )
+    return str(erro)
+
+
 def main():
     # ==========================================
     # Coloque sua API key do Groq aqui ou
@@ -66,19 +157,7 @@ def main():
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
 
-        # Suporte a COOKIES_CONTENT (base64) para Vercel/ambientes sem sistema de arquivos persistente
-        cookies_file = None
-        cookies_content_b64 = os.environ.get("COOKIES_CONTENT")
-        if cookies_content_b64:
-            import base64
-            _tmp_cookies = os.path.join(tempfile.gettempdir(), f"yt_cookies_{uuid.uuid4().hex[:8]}.txt")
-            with open(_tmp_cookies, "wb") as _f:
-                _f.write(base64.b64decode(cookies_content_b64))
-            cookies_file = _tmp_cookies
-        else:
-            _candidate = os.environ.get("COOKIES_FILE") or os.path.join(script_dir, "cookies.txt")
-            if os.path.exists(_candidate):
-                cookies_file = _candidate
+        cookies_file, cookies_temporario = resolver_cookies(video_url, script_dir)
 
         ydl_opts = {
             "format": "worstaudio/worst",
@@ -91,45 +170,55 @@ def main():
             "extractor_args": {
                 "youtube": {"player_client": ["android_vr", "tv", "web_safari", "web"]}
             },
-            "postprocessors": [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "32",
-            }],
+            # Sem postprocessor de ffmpeg: o Whisper do Groq aceita m4a, webm e mp4
+            # direto. Converter pra mp3 32kbps só gastava tempo e degradava o áudio.
         }
 
+        # Tentativas em cascata, da menos intrusiva para a mais.
+        # Cookie NÃO vai na primeira tentativa de propósito: sessão deslogada ou
+        # banco do navegador travado faz a plataforma recusar um download que
+        # funcionaria sem cookie nenhum. Só entra como resgate.
+        tentativas = [("sem cookies", {})]
         if cookies_file:
-            ydl_opts["cookiefile"] = cookies_file
-        else:
-            # Fallback: tenta ler cookies diretamente do browser instalado
-            BROWSERS = ["edge", "chrome", "firefox", "brave", "chromium"]
-            for browser in BROWSERS:
-                try:
-                    with yt_dlp.YoutubeDL({
-                        "quiet": True,
-                        "no_warnings": True,
-                        "cookiesfrombrowser": (browser,),
-                        "logger": StderrLogger(),
-                    }) as _ydl:
-                        list(_ydl.cookiejar)  # força leitura do jar; falha se browser ausente
-                    ydl_opts["cookiesfrombrowser"] = (browser,)
-                    break
-                except Exception:
-                    continue
+            tentativas.append(("cookies de arquivo", {"cookiefile": cookies_file}))
+        tentativas += [
+            (f"cookies do {b}", {"cookiesfrombrowser": (b,)})
+            for b in ("edge", "chrome", "firefox", "brave", "chromium")
+        ]
 
         video_title = ""
         video_thumbnail = ""
+        final_audio = None
+        info = None
+        ultimo_erro = None
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-            if info:
-                video_title = info.get("title", "")
-                video_thumbnail = info.get("thumbnail", "")
+        for descricao, extra in tentativas:
+            try:
+                with yt_dlp.YoutubeDL({**ydl_opts, **extra}) as ydl:
+                    info = ydl.extract_info(video_url, download=True)
+                    if info:
+                        video_title = info.get("title", "")
+                        video_thumbnail = info.get("thumbnail", "")
+                        final_audio = ydl.prepare_filename(info)
+                print(f"[extrator] sucesso: {descricao}", file=sys.stderr)
+                break
+            except Exception as err:
+                ultimo_erro = err
+                print(f"[extrator] falhou: {descricao} -> {str(err)[:120]}", file=sys.stderr)
 
-        # Localiza o arquivo final (sempre .mp3 após pós-processamento)
-        final_audio = audio_path + ".mp3"
+        if info is None:
+            raise ultimo_erro or Exception("Não foi possível baixar o áudio.")
 
-        if not os.path.exists(final_audio):
+        # A extensão depende do formato que a plataforma serviu (m4a, webm, opus…)
+        if not final_audio or not os.path.exists(final_audio):
+            candidatos = [
+                os.path.join(temp_dir, f)
+                for f in os.listdir(temp_dir)
+                if f.startswith(audio_filename)
+            ]
+            final_audio = candidatos[0] if candidatos else None
+
+        if not final_audio or not os.path.exists(final_audio):
             print(json.dumps({
                 "status": "error",
                 "message": "Falha ao baixar o áudio. Verifique se a URL é válida e o vídeo é público."
@@ -151,7 +240,7 @@ def main():
 
         # --- ETAPA 3: Limpeza ---
         os.remove(final_audio)
-        if cookies_content_b64 and cookies_file and os.path.exists(cookies_file):
+        if cookies_temporario and cookies_file and os.path.exists(cookies_file):
             os.remove(cookies_file)
 
         # --- ETAPA 4: Output JSON ---
@@ -163,15 +252,17 @@ def main():
         }, ensure_ascii=False))
 
     except Exception as e:
-        # Limpa o arquivo de áudio se existir, mesmo em caso de erro
-        for ext in [".mp3", ".m4a", ".webm", ".opus"]:
-            path = audio_path + ext
-            if os.path.exists(path):
-                os.remove(path)
+        # Limpa qualquer arquivo parcial deixado pelo download
+        for f in os.listdir(temp_dir):
+            if f.startswith(audio_filename):
+                try:
+                    os.remove(os.path.join(temp_dir, f))
+                except OSError:
+                    pass
 
         print(json.dumps({
             "status": "error",
-            "message": str(e)
+            "message": explicar_erro(e, video_url)
         }, ensure_ascii=False))
         sys.exit(1)
 
