@@ -5,8 +5,8 @@
 // O plano free da Groq dá 8.000 tokens/minuto e as 5 alegações são validadas
 // em paralelo — por isso o prompt precisa ser enxuto. Estes dois números são
 // o freio: mais fontes ou resumos mais longos derrubam tudo com 429.
-const MAX_FONTES_PROMPT = 3;
-const MAX_RESUMO_CHARS = 150;
+const MAX_FONTES_PROMPT = 2;
+const MAX_RESUMO_CHARS = 100;
 
 const alegacao = $('Parsear alegações').item.json;
 
