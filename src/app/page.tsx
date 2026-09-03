@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Header from "@/components/Header";
 import VideoInput from "@/components/VideoInput";
 import LoadingSteps from "@/components/LoadingSteps";
 import ResultsSection from "@/components/ResultsSection";
+import HistoryModal from "@/components/HistoryModal";
 import { loadingSteps } from "@/data/mockData";
 import type { AnalysisResult } from "@/data/mockData";
+import {
+  saveAnalysis,
+  getSavedAnalyses,
+  type SavedAnalysis,
+} from "@/lib/history";
 
 const API_URL = "/api/transcribe";
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
@@ -45,7 +51,29 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [currentInputSource, setCurrentInputSource] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+
+  // Histórico de análises
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [savedAnalyses, setSavedAnalyses] = useState<SavedAnalysis[]>([]);
+
+  const refreshHistory = useCallback(() => {
+    setSavedAnalyses(getSavedAnalyses());
+  }, []);
+
+  useEffect(() => {
+    refreshHistory();
+
+    const handleStorageChange = () => {
+      refreshHistory();
+    };
+
+    window.addEventListener("factcheck_history_updated", handleStorageChange);
+    return () => {
+      window.removeEventListener("factcheck_history_updated", handleStorageChange);
+    };
+  }, [refreshHistory]);
 
   const simulateSteps = useCallback((): Promise<void> => {
     return new Promise((resolve) => {
@@ -73,6 +101,8 @@ export default function Home() {
       return;
     }
 
+    const inputSource = file ? `arquivo: ${file.name}` : url.trim();
+    setCurrentInputSource(inputSource);
     setResult(null);
     setError(null);
     setIsLoading(true);
@@ -110,7 +140,7 @@ export default function Home() {
       body: JSON.stringify({
         transcricao: transcribeData.text,
         videoTitle: transcribeData.title || "",
-        videoUrl: file ? `arquivo:${file.name}` : url.trim(),
+        videoUrl: inputSource,
       }),
     });
 
@@ -141,7 +171,7 @@ export default function Home() {
       overallScore = Math.round((totalConfianca / claims.length) * 100);
     }
 
-    setResult({
+    const analysisResult: AnalysisResult = {
       videoTitle: transcribeData.title || "Vídeo analisado",
       videoChannel: "",
       thumbnailUrl: transcribeData.thumbnail || "",
@@ -149,12 +179,35 @@ export default function Home() {
       transcript: transcribeData.text,
       claims,
       overallScore: overallScore || 0,
+    };
+
+    // Salva automaticamente no histórico local para relatórios e pesquisas
+    saveAnalysis(analysisResult, inputSource);
+    refreshHistory();
+
+    setResult(analysisResult);
+  }, [url, file, isLoading, simulateSteps, refreshHistory]);
+
+  const handleSelectFromHistory = (saved: SavedAnalysis) => {
+    setResult({
+      videoTitle: saved.videoTitle,
+      videoChannel: saved.videoChannel,
+      thumbnailUrl: saved.thumbnailUrl,
+      embedUrl: saved.embedUrl,
+      transcript: saved.transcript,
+      claims: saved.claims,
+      overallScore: saved.overallScore,
     });
-  }, [url, file, isLoading, simulateSteps]);
+    setCurrentInputSource(saved.inputSource || "Histórico");
+    setError(null);
+  };
 
   return (
     <>
-      <Header />
+      <Header
+        savedCount={savedAnalyses.length}
+        onOpenHistory={() => setIsHistoryOpen(true)}
+      />
 
       <main className="flex-1">
         <VideoInput
@@ -178,12 +231,27 @@ export default function Home() {
           </div>
         )}
 
-        {result && <ResultsSection result={result} />}
+        {result && (
+          <ResultsSection
+            result={result}
+            inputSource={currentInputSource}
+            isSaved={true}
+          />
+        )}
       </main>
 
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        analyses={savedAnalyses}
+        onSelectAnalysis={handleSelectFromHistory}
+        onRefresh={refreshHistory}
+      />
+
       <footer className="border-t border-gray-200 bg-white py-4 text-center text-xs text-gray-400">
-        TCC &mdash; Sistema de Letramento Digital e Validação de Fatos com IA
+        TCC &mdash; Sistema de Letramento Digital e Validação de Fatos com IA (UNIFOR 2026)
       </footer>
     </>
   );
 }
+
