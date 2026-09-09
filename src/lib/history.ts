@@ -164,7 +164,7 @@ export function exportAnalysisAsJson(analysis: SavedAnalysis | AnalysisResult, i
   const exportData = {
     metadata: {
       exportedAt: new Date().toISOString(),
-      system: "FactCheck KAI",
+      system: "FactChekk",
       version: "1.0.0",
       inputSource: "inputSource" in analysis ? analysis.inputSource : inputSource || "desconhecido",
     },
@@ -188,7 +188,7 @@ export function exportAnalysisAsMarkdown(analysis: SavedAnalysis | AnalysisResul
   const source = "inputSource" in analysis ? analysis.inputSource : inputSource || "URL / Arquivo";
   const summary = calculateSummary(analysis.claims);
 
-  let md = `# Relatório de Verificação de Fatos — FactCheck KAI\n\n`;
+  let md = `# Relatório de Verificação de Fatos — FactChekk\n\n`;
   md += `> **Data de geração:** ${dateStr}  \n`;
   md += `> **Fonte do conteúdo:** \`${source}\`  \n`;
   md += `> **Título identificado:** ${analysis.videoTitle || "Sem título"}  \n`;
@@ -245,7 +245,7 @@ export function exportAnalysisAsMarkdown(analysis: SavedAnalysis | AnalysisResul
 
   md += `## 3. Transcrição Completa do Conteúdo\n\n`;
   md += `\`\`\`text\n${analysis.transcript || "(Transcrição vazia)"}\n\`\`\`\n\n`;
-  md += `---\n*Documento gerado automaticamente pelo sistema FactCheck KAI (TCC UNIFOR 2026).*\n`;
+  md += `---\n*Documento gerado automaticamente pelo sistema FactChekk (TCC UNIFOR 2026).*\n`;
 
   const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
   const filename = `relatorio_${sanitizeFilename(analysis.videoTitle || "factcheck")}_${Date.now()}.md`;
@@ -384,7 +384,7 @@ export function exportAllAnalysesAsJson(analyses: SavedAnalysis[]): void {
     metadata: {
       exportedAt: new Date().toISOString(),
       totalAnalyses: analyses.length,
-      system: "FactCheck KAI",
+      system: "FactChekk",
       version: "1.0.0",
     },
     analyses,

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FactCheck AI - Verificador de Fatos em Vídeos",
+  title: "FactChekk - Verificador de Fatos em Vídeos",
   description:
     "Sistema de letramento digital e validação de fatos em vídeos com Inteligência Artificial",
 };

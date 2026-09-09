@@ -15,7 +15,7 @@ export default function Header({ savedCount = 0, onOpenHistory }: HeaderProps) {
           <ShieldCheck className="h-8 w-8 text-blue-600 shrink-0" />
           <div>
             <h1 className="text-xl font-bold tracking-tight text-gray-900">
-              FactCheck KAI
+              FactChekk
             </h1>
             <p className="text-sm text-gray-500">
               Verificador científico de fatos em vídeos com Inteligência Artificial

@@ -1,4 +1,4 @@
-# FactCheck KAI
+# FactChekk
 
 Sistema de verificação científica para conteúdos digitais voltado ao público idoso.
 
