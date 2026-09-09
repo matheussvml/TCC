@@ -18,7 +18,7 @@ const API_URL = "/api/transcribe";
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
 // Se configurado, o upload vai direto pro Flask do Render — pula o limite de 4.5 MB da Vercel
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
-const MAX_UPLOAD_MB = 25; // limite do Whisper no Groq
+const MAX_UPLOAD_MB = 100; // limite do Whisper no Groq: 25 MB no free tier, 100 MB no Dev Tier
 
 // Tolera resposta vazia ou não-JSON (webhook inativo, erro do n8n, timeout)
 async function postJson(
