@@ -13,6 +13,7 @@ import {
   getSavedAnalyses,
   type SavedAnalysis,
 } from "@/lib/history";
+import { extrairAudio } from "@/lib/audio";
 
 const API_URL = "/api/transcribe";
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
@@ -110,14 +111,18 @@ export default function Home() {
 
     simulateSteps();
 
-    const transcribeData = file
+    // Manda so o audio: o Whisper nao usa a imagem, e o video inteiro trafega
+    // duas vezes (browser -> Render -> Groq). Se a extracao falhar, vai o original.
+    const upload = file ? await extrairAudio(file) : null;
+
+    const transcribeData = upload
       ? await postJson(
           BACKEND_URL ? `${BACKEND_URL}/api/transcribe/upload` : API_URL,
           {
             method: "POST",
             body: (() => {
               const form = new FormData();
-              form.append("file", file);
+              form.append("file", upload);
               return form;
             })(),
           }
