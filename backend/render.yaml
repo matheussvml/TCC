@@ -3,7 +3,10 @@ services:
     name: tcc-transcribe-api
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    # gthread + threads: o trabalho aqui e de espera (upload + resposta da Groq), nao de CPU.
+    # Com "--workers 1" sync o servico atendia UMA requisicao por vez e travava a fila inteira.
+    # timeout 300 cobre upload + transcricao, sem deixar um pedido preso bloquear tudo por 10 min.
+    startCommand: gunicorn app:app --worker-class gthread --workers 1 --threads 8 --timeout 300
     envVars:
       - key: GROQ_API_KEY
         sync: false
