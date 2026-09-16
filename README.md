@@ -52,7 +52,7 @@ Crie um `.env.local` na raiz:
 
 ```
 GROQ_API_KEY=sua_chave_groq
-NEXT_PUBLIC_N8N_WEBHOOK_URL=https://matheusvml.app.n8n.cloud/webhook/validar-alegacoes
+NEXT_PUBLIC_N8N_WEBHOOK_URL=https://factcheckkai.app.n8n.cloud/webhook/validar-alegacoes
 # BACKEND_URL= deixar vazio em dev local
 ```
 
