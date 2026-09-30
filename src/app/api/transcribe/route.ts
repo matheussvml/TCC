@@ -89,7 +89,9 @@ export async function POST(request: Request) {
         ["-X", "utf8", scriptPath, url],
         { timeout: 120000, env: { ...process.env, PYTHONIOENCODING: "utf-8" } },
         (error, stdout, stderr) => {
-          if (error) {
+          // O extrator imprime o erro em JSON no stdout e sai com código 1;
+          // o stderr só tem o log das tentativas de download.
+          if (error && !stdout.trim()) {
             reject(new Error(stderr || error.message));
             return;
           }
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
     });
 
     const data = JSON.parse(result);
-    return Response.json(data);
+    return Response.json(data, { status: data.status === "success" ? 200 : 500 });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Erro ao processar o vídeo.";
