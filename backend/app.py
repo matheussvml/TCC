@@ -134,10 +134,18 @@ def transcribe():
         cookies_path = resolver_cookies(video_url)
 
         # Cookie fica para a segunda tentativa: sessão vencida faz a plataforma
-        # recusar downloads que passariam sem cookie nenhum.
+        # recusar downloads que passariam sem cookie nenhum. Exceção: o YouTube
+        # sempre pede "não é um robô" ao IP do Render, então sem cookie ele só
+        # gastava ~10 s antes de falhar. Lá o cookie vai primeiro, e o sem-cookie
+        # fica de reserva para o caso de o cookie ter vencido.
         tentativas = [("sem cookies", {})]
         if cookies_path:
-            tentativas.append(("cookies de arquivo", {"cookiefile": cookies_path}))
+            com_cookie = ("cookies de arquivo", {"cookiefile": cookies_path})
+            url = video_url.lower()
+            if "youtube." in url or "youtu.be" in url:
+                tentativas.insert(0, com_cookie)
+            else:
+                tentativas.append(com_cookie)
 
         video_title = ""
         video_thumbnail = ""
