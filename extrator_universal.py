@@ -103,6 +103,18 @@ def explicar_erro(erro, video_url):
     return str(erro)
 
 
+def js_runtimes():
+    """Deno instalado pelo pip (pacote "deno") para o yt-dlp resolver o desafio
+    JavaScript do YouTube. Com cookie de conta o yt-dlp usa os clients web/tv, que
+    exigem esse desafio: sem runtime nenhum formato sobra e o erro é
+    "The page needs to be reloaded"."""
+    try:
+        import deno
+        return {"deno": {"path": deno.find_deno_bin()}}
+    except Exception:
+        return {"deno": {}}
+
+
 def main():
     # ==========================================
     # Coloque sua API key do Groq aqui ou
@@ -168,6 +180,7 @@ def main():
             "no_warnings": True,
             "noprogress": True,
             "logger": StderrLogger(),
+            "js_runtimes": js_runtimes(),
             # Sem "player_client" fixo: o YouTube troca quais clients exigem PO token
             # (em 09/2026 o android_vr passou a exigir e dava 403). A seleção padrão
             # do yt-dlp acompanha essas mudanças a cada versão.
