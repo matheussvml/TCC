@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import AccessibilityBar from "@/components/AccessibilityBar";
 import Header from "@/components/Header";
 import VideoInput from "@/components/VideoInput";
 import LoadingSteps from "@/components/LoadingSteps";
@@ -14,6 +15,7 @@ import {
   type SavedAnalysis,
 } from "@/lib/history";
 import { extrairAudio } from "@/lib/audio";
+import { extrairLink } from "@/lib/links";
 
 const API_URL = "/api/transcribe";
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
@@ -102,7 +104,9 @@ export default function Home() {
       return;
     }
 
-    const inputSource = file ? `arquivo: ${file.name}` : url.trim();
+    // Texto digitado/colado com mais coisa além do link: manda só o link
+    const link = extrairLink(url) ?? url.trim();
+    const inputSource = file ? `arquivo: ${file.name}` : link;
     setCurrentInputSource(inputSource);
     setResult(null);
     setError(null);
@@ -130,7 +134,7 @@ export default function Home() {
       : await postJson(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: url.trim() }),
+          body: JSON.stringify({ url: link }),
         });
 
     if (transcribeData.status !== "success") {
@@ -156,7 +160,7 @@ export default function Home() {
       return;
     }
 
-    const youtubeMatch = url.match(
+    const youtubeMatch = link.match(
       /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/
     );
     const embedUrl = youtubeMatch
@@ -209,6 +213,7 @@ export default function Home() {
 
   return (
     <>
+      <AccessibilityBar />
       <Header
         savedCount={savedAnalyses.length}
         onOpenHistory={() => setIsHistoryOpen(true)}
@@ -229,8 +234,11 @@ export default function Home() {
         )}
 
         {error && (
-          <div className="mx-auto max-w-3xl px-6 py-6">
-            <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-center text-sm text-red-700">
+          <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+            <div
+              role="alert"
+              className="rounded-xl border-2 border-red-300 bg-red-50 p-5 text-center text-base leading-relaxed text-red-900"
+            >
               {error}
             </div>
           </div>
@@ -253,7 +261,7 @@ export default function Home() {
         onRefresh={refreshHistory}
       />
 
-      <footer className="border-t border-gray-200 bg-white py-4 text-center text-xs text-gray-400">
+      <footer className="border-t border-gray-200 bg-white px-4 py-4 text-center text-sm text-gray-600">
         TCC &mdash; Sistema de Letramento Digital e Validação de Fatos com IA (UNIFOR 2026)
       </footer>
     </>

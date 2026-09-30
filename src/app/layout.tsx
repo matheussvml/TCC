@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SCRIPT_APLICAR_A11Y } from "@/lib/a11y";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +26,14 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Aplica letra/contraste salvos antes da primeira pintura (ver lib/a11y.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_APLICAR_A11Y }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

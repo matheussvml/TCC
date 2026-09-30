@@ -10,15 +10,16 @@ interface HeaderProps {
 export default function Header({ savedCount = 0, onOpenHistory }: HeaderProps) {
   return (
     <header className="w-full border-b border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+      {/* flex-wrap: com letra muito grande o Histórico desce em vez de cobrir o nome */}
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
         <div className="flex items-center gap-3">
-          <ShieldCheck className="h-8 w-8 text-blue-600 shrink-0" />
+          <ShieldCheck className="h-9 w-9 text-blue-700 shrink-0" aria-hidden="true" />
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
               FactChekk
             </h1>
-            <p className="text-sm text-gray-500">
-              Verificador científico de fatos em vídeos com Inteligência Artificial
+            <p className="hidden text-base text-gray-700 sm:block">
+              Verificador científico de fatos em vídeos
             </p>
           </div>
         </div>
@@ -26,14 +27,16 @@ export default function Header({ savedCount = 0, onOpenHistory }: HeaderProps) {
         {onOpenHistory && (
           <button
             onClick={onOpenHistory}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-100 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border-2 border-gray-300 bg-white px-3.5 py-2 text-base font-semibold text-gray-800 transition hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
             title="Abrir histórico de análises salvas"
           >
-            <History className="h-4 w-4 text-blue-600" />
-            <span className="hidden sm:inline">Histórico</span>
+            <History className="h-5 w-5 text-blue-700" aria-hidden="true" />
+            <span>Histórico</span>
             {savedCount > 0 && (
-              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-600 px-1.5 text-[11px] font-bold text-white">
+              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-700 px-1.5 text-sm font-bold text-white">
+                <span className="sr-only">, </span>
                 {savedCount}
+                <span className="sr-only"> salvos</span>
               </span>
             )}
           </button>

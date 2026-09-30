@@ -26,3 +26,71 @@ body {
 .animate-fade-in {
   animation: fade-in 0.5s ease-out forwards;
 }
+
+/* Quem pediu menos movimento no sistema operacional não vê o fade-in */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+  }
+}
+
+/* ===== Painel de Acessibilidade (atributos definidos em lib/a11y.ts) ===== */
+
+/* Tamanho da letra. O Tailwind mede tudo em rem, então aumentar a fonte da
+   raiz aumenta texto, espaçamentos e botões juntos, como um zoom. */
+html[data-fonte="grande"] {
+  font-size: 118.75%; /* 19px */
+}
+html[data-fonte="muito-grande"] {
+  font-size: 137.5%; /* 22px */
+}
+
+/* Alto contraste. As cores do Tailwind 4 são variáveis CSS: redefinindo a
+   escala de cinza, todo texto cinza vira preto e toda borda cinza fica escura,
+   sem mexer em componente nenhum. */
+html[data-contraste="alto"] {
+  --background: #ffffff;
+  --foreground: #000000;
+  --color-gray-50: #ffffff;
+  --color-gray-100: #ffffff;
+  --color-gray-200: #000000;
+  --color-gray-300: #000000;
+  --color-gray-400: #000000;
+  --color-gray-500: #000000;
+  --color-gray-600: #000000;
+  --color-gray-700: #000000;
+  --color-gray-800: #000000;
+  --color-gray-900: #000000;
+  --color-blue-700: #0b2a86;
+  --color-blue-800: #0a2470;
+  --color-blue-900: #071a52;
+}
+html[data-contraste="alto"] body {
+  background: #ffffff;
+  color: #000000;
+}
+html[data-contraste="alto"] a:not(.no-underline) {
+  text-decoration: underline;
+}
+html[data-contraste="alto"] :focus-visible {
+  outline: 3px solid #000000 !important;
+  outline-offset: 3px;
+}
+
+/* Menos movimento: desliga animações e transições. O spinner de carregamento
+   continua girando (mais devagar), porque é ele que mostra que não travou. */
+html[data-movimento="reduzido"] *,
+html[data-movimento="reduzido"] *::before,
+html[data-movimento="reduzido"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+html[data-movimento="reduzido"] .animate-fade-in {
+  animation: none !important;
+}
+html[data-movimento="reduzido"] .animate-spin {
+  animation-duration: 1.5s !important;
+  animation-iteration-count: infinite !important;
+}

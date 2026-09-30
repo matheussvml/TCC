@@ -105,11 +105,14 @@ Por fim, vale mencionar que a meditação pode melhorar a qualidade do sono. Seg
   overallScore: 64,
 };
 
+// Durações próximas do tempo real medido em 30/09/2026 (~6 s de transcrição +
+// ~12 s de validação no n8n). Antes somavam 10 s e os passos "terminavam"
+// muito antes do resultado, o que parecia travamento.
 export const loadingSteps = [
-  { label: "Extraindo informações do vídeo...", duration: 1200 },
-  { label: "Transcrevendo áudio com IA...", duration: 2000 },
-  { label: "Identificando afirmações-chave...", duration: 1500 },
-  { label: "Consultando bases de dados científicas e jornalísticas...", duration: 2500 },
-  { label: "Validando afirmações com as evidências encontradas...", duration: 2000 },
-  { label: "Gerando relatório de validação...", duration: 1000 },
+  { label: "Extraindo informações do vídeo...", duration: 2000 },
+  { label: "Transcrevendo áudio com IA...", duration: 5000 },
+  { label: "Identificando afirmações-chave...", duration: 3000 },
+  { label: "Consultando bases de dados científicas e jornalísticas...", duration: 6000 },
+  { label: "Validando afirmações com as evidências encontradas...", duration: 5000 },
+  { label: "Gerando relatório de validação...", duration: 3000 },
 ];
