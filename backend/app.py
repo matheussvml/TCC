@@ -103,19 +103,17 @@ def transcribe():
             def error(self, msg): pass
 
         ydl_opts = {
-            "format": "worstaudio/worst",
+            # Prefere áudio por HTTP(S) (m4a/webm). O HLS do YouTube (formato 233)
+            # sai como AAC cru com extensão .mp4, e o Whisper recusa.
+            "format": "worstaudio[protocol^=http]/worstaudio/worst",
             "outtmpl": audio_path + ".%(ext)s",
             "quiet": True,
             "no_warnings": True,
             "noprogress": True,
             "logger": SilentLogger(),
-            # Usa clientes mobile/tv que geralmente burlam a checagem de bot
-            "extractor_args": {
-                "youtube": {
-                    # android_vr e web_safari não exigem PO token; ios/android puros passaram a exigir
-                    "player_client": ["android_vr", "tv", "web_safari", "web"],
-                }
-            },
+            # Sem "player_client" fixo: o YouTube troca quais clients exigem PO token
+            # (em 09/2026 o android_vr passou a exigir e dava 403). A seleção padrão
+            # do yt-dlp acompanha essas mudanças a cada versão.
             # Sem postprocessor de ffmpeg: o Whisper aceita m4a, webm e mp4 direto.
             # Converter pra mp3 32kbps só gastava tempo e degradava o áudio.
         }

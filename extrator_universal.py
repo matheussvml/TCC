@@ -160,16 +160,17 @@ def main():
         cookies_file, cookies_temporario = resolver_cookies(video_url, script_dir)
 
         ydl_opts = {
-            "format": "worstaudio/worst",
+            # Prefere áudio por HTTP(S) (m4a/webm). O HLS do YouTube (formato 233)
+            # sai como AAC cru com extensão .mp4, e o Whisper recusa.
+            "format": "worstaudio[protocol^=http]/worstaudio/worst",
             "outtmpl": audio_path + ".%(ext)s",
             "quiet": True,
             "no_warnings": True,
             "noprogress": True,
             "logger": StderrLogger(),
-            # Clients que não exigem PO token — contornam parte da checagem de bot do YouTube
-            "extractor_args": {
-                "youtube": {"player_client": ["android_vr", "tv", "web_safari", "web"]}
-            },
+            # Sem "player_client" fixo: o YouTube troca quais clients exigem PO token
+            # (em 09/2026 o android_vr passou a exigir e dava 403). A seleção padrão
+            # do yt-dlp acompanha essas mudanças a cada versão.
             # Sem postprocessor de ffmpeg: o Whisper do Groq aceita m4a, webm e mp4
             # direto. Converter pra mp3 32kbps só gastava tempo e degradava o áudio.
         }
