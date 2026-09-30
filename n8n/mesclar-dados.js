@@ -2,9 +2,9 @@
 // Monta o prompt de validação e as listas de fontes COM LINK REAL.
 // As URLs vêm direto do OpenAlex e da Tavily — o LLM nunca inventa link.
 
-// O plano free da Groq dá 8.000 tokens/minuto e as 5 alegações são validadas
-// em paralelo — por isso o prompt precisa ser enxuto. Estes dois números são
-// o freio: mais fontes ou resumos mais longos derrubam tudo com 429.
+// No free tier da Groq (8.000 tokens/minuto) as alegações validadas em paralelo
+// estouravam com 429 — daí estes dois freios. No Dev Tier (desde 08/09/2026) o
+// teto é 250k, mas o prompt enxuto continua baixando o custo por análise.
 const MAX_FONTES_PROMPT = 2;
 const MAX_RESUMO_CHARS = 100;
 
