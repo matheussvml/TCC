@@ -39,6 +39,13 @@ yarn-error.log*
 # cookies do browser (contém sessões de todos os sites — nunca commitar)
 cookies*.txt
 
+# Export do workflow do n8n (tem as chaves do Groq e da Tavily hardcoded).
+# Qualquer .json na raiz fica fora; os do projeto entram pelas exceções.
+/*.json
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+
 # vercel
 .vercel
 
