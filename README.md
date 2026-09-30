@@ -12,7 +12,7 @@ Orientador: Prof. Me. Ronaldo Gonçalves Junior
 
 1. Usuário cola a URL de um vídeo (YouTube, TikTok, Instagram etc.)
 2. O áudio é baixado e transcrito com Whisper via Groq
-3. Um workflow no n8n extrai até 5 alegações do texto
+3. Um workflow no n8n extrai até 3 alegações do texto
 4. Cada alegação é buscada no OpenAlex (base científica) e validada pelo Groq
 5. O frontend exibe as alegações com veredicto, confiança e fontes
 
@@ -25,7 +25,7 @@ Orientador: Prof. Me. Ronaldo Gonçalves Junior
 | Frontend | Next.js 16, TypeScript, Tailwind CSS — Vercel |
 | Transcrição | Python, yt-dlp, Groq Whisper (whisper-large-v3) — Render |
 | Orquestração | n8n Cloud |
-| LLM | Groq API — llama-3.3-70b-versatile |
+| LLM | Groq API — openai/gpt-oss-120b |
 | Fontes científicas | OpenAlex API |
 
 ---
@@ -52,7 +52,7 @@ Crie um `.env.local` na raiz:
 
 ```
 GROQ_API_KEY=sua_chave_groq
-NEXT_PUBLIC_N8N_WEBHOOK_URL=https://factcheckkai.app.n8n.cloud/webhook/validar-alegacoes
+NEXT_PUBLIC_N8N_WEBHOOK_URL=https://factcheckkkai.app.n8n.cloud/webhook/validar-alegacoes
 # BACKEND_URL= deixar vazio em dev local
 ```
 
