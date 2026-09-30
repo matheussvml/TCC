@@ -37,9 +37,7 @@ yarn-error.log*
 .env*
 
 # cookies do browser (contém sessões de todos os sites — nunca commitar)
-cookies.txt
-cookies_yt.txt
-cookies_yt_min.txt
+cookies*.txt
 
 # vercel
 .vercel
