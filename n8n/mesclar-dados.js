@@ -3,10 +3,11 @@
 // As URLs vêm direto do OpenAlex e da Tavily — o LLM nunca inventa link.
 
 // No free tier da Groq (8.000 tokens/minuto) as alegações validadas em paralelo
-// estouravam com 429 — daí estes dois freios. No Dev Tier (desde 08/09/2026) o
-// teto é 250k, mas o prompt enxuto continua baixando o custo por análise.
-const MAX_FONTES_PROMPT = 2;
-const MAX_RESUMO_CHARS = 100;
+// estouravam com 429, e estes freios chegaram a 2 fontes e 100 caracteres
+// (19/08/2026). No Dev Tier (desde 08/09/2026) o teto é 250k e a produção voltou
+// a 3 e 150 — valores conferidos no workflow em 18/10/2026.
+const MAX_FONTES_PROMPT = 3;
+const MAX_RESUMO_CHARS = 150;
 
 const alegacao = $('Parsear alegações').item.json;
 
