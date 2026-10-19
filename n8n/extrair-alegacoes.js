@@ -10,6 +10,31 @@ const MAX_ALEGACOES = 3;
 
 const transcricao = $input.first().json.transcricao;
 
+// Regras que vieram do teste com 56 vídeos reais (18/10/2026):
+// - perguntas e frases triviais ("esse processo dura 20 segundos") viravam
+//   alegação, saíam SEM EMBASAMENTO e puxavam para baixo vídeos verdadeiros;
+// - em vídeo que DESMENTE um mito, o mito era extraído como se fosse a tese;
+// - a busca na OpenAlex pela frase em português trazia artigos sem relação
+//   ("chiclete no estômago" → crítica literária), por isso cada alegação vem
+//   com palavras-chave em inglês em busca_cientifica.
+const instrucoes = `Leia o TEXTO abaixo, transcrito de um vídeo, e extraia as afirmações factuais verificáveis mais relevantes (mínimo 1, máximo ${MAX_ALEGACOES}).
+
+REGRAS:
+1. Extraia só afirmações sobre o mundo que possam ser checadas contra evidências (ex.: 'X causa Y', 'X cura Y', 'X% das pessoas Z').
+2. NÃO extraia perguntas, opiniões, conselhos genéricos, pedidos para curtir ou seguir, nem detalhes triviais ou de procedimento (ex.: 'esse processo dura 20 segundos', 'pegue uma colher de mel').
+3. Escreva cada afirmação do jeito que o VÍDEO A DEFENDE. Se o vídeo cita um mito para desmenti-lo, a afirmação é a correção, não o mito. Ex.: o vídeo diz 'dizem que o chiclete engolido fica 7 anos no estômago, mas isso é mito' → afirmação: 'Chiclete engolido não fica 7 anos no estômago'.
+4. Cada afirmação deve ser uma frase completa, que se entenda sozinha, sem 'isso', 'ele' ou 'esse'.
+5. Se houver mais de ${MAX_ALEGACOES}, escolha as de maior risco de desinformação, priorizando saúde.
+6. Em 'busca_cientifica', escreva de 3 a 6 palavras-chave EM INGLÊS para buscar artigos científicos sobre o assunto da afirmação, sem pontuação (ex.: 'chewing gum swallowed digestion').
+
+TEXTO:
+`;
+
+const formato = `
+
+Responda APENAS com este JSON (no máximo ${MAX_ALEGACOES} itens no array):
+{"alegacoes": [{"id": 1, "texto": "afirmação como o vídeo a defende", "contexto": "frase completa do texto", "tema": "saude|politica|ciencia|economia|outro", "busca_cientifica": "english keywords"}]}`;
+
 const body = {
   model: "openai/gpt-oss-120b",
   temperature: 0,
@@ -21,7 +46,7 @@ const body = {
     },
     {
       role: "user",
-      content: `Leia o TEXTO abaixo e extraia as afirmações factuais verificáveis mais relevantes (mínimo 1, máximo ${MAX_ALEGACOES}). Uma afirmação verificável é qualquer declaração que possa ser checada contra evidências (ex: 'beber água faz bem', 'X causa Y', 'X% das pessoas Z'). Opiniões e perguntas NÃO contam. Se houver mais de ${MAX_ALEGACOES}, escolha as que têm maior risco de desinformação, priorizando saúde.\n\nTEXTO:\n` + transcricao + `\n\nResponda APENAS com este JSON (no máximo ${MAX_ALEGACOES} itens no array):\n{"alegacoes": [{"id": 1, "texto": "afirmação exata", "contexto": "frase completa do texto", "tema": "saude|politica|ciencia|economia|outro"}]}`
+      content: instrucoes + transcricao + formato
     }
   ]
 };

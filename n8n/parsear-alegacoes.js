@@ -15,9 +15,34 @@ try {
   throw new Error('Groq não retornou JSON válido: ' + raw.substring(0, 200));
 }
 
-const alegacoes = parsed.alegacoes || [];
+// A Tavily recebe a alegação dentro de um JSON montado como texto
+// ("query": "{{ $json.alegacao }}"): aspas duplas, barra invertida ou quebra
+// de linha no meio quebram o corpo da requisição.
+const paraTavily = (s) => String(s || '').replace(/"/g, "'").replace(/[\\\r\n]+/g, ' ').trim();
+
+// A OpenAlex trata ? e * como curinga e responde 400, o que derrubava a
+// execução inteira (2 dos 56 vídeos reais em 18/10/2026).
+const paraOpenAlex = (s) => String(s || '').replace(/[?*"\\]/g, ' ').replace(/\s+/g, ' ').trim();
+
+const alegacoes = (parsed.alegacoes || []).filter((a) => paraTavily(a.texto));
 if (alegacoes.length === 0) {
   throw new Error('Nenhuma alegação encontrada na transcrição.');
 }
 
-return alegacoes.slice(0, MAX_ALEGACOES).map(a => ({ json: a }));
+// Quem lê cada campo:
+// - alegacao: texto em português. A Tavily busca por ele, e o "Mesclar dados"
+//   o usa no prompt de validação e no card.
+// - texto: o que a OpenAlex busca (o nó HTTP lê $json.texto). São as
+//   palavras-chave em inglês; se o modelo não mandar, vai a própria alegação.
+return alegacoes.slice(0, MAX_ALEGACOES).map((a, i) => {
+  const alegacao = paraTavily(a.texto);
+  return {
+    json: {
+      id: a.id ?? i + 1,
+      alegacao,
+      texto: paraOpenAlex(a.busca_cientifica) || paraOpenAlex(alegacao),
+      contexto: a.contexto || '',
+      tema: a.tema || 'outro',
+    },
+  };
+});

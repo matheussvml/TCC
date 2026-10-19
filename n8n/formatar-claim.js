@@ -41,8 +41,11 @@ const claims = allItems.map((item, index) => {
     displayScore = 0;
   }
 
+  // Sem provas não é o mesmo que falso: cinza, não vermelho (18/10/2026).
   const displayColor =
-    status === 'validated' ? 'green' : status === 'partial' ? 'yellow' : 'red';
+    veredicto === 'SEM EMBASAMENTO SUFICIENTE'
+      ? 'gray'
+      : status === 'validated' ? 'green' : status === 'partial' ? 'yellow' : 'red';
 
   // Fontes vêm do OpenAlex/Tavily via "Mesclar dados" — nunca do LLM,
   // que poderia alucinar títulos e URLs inexistentes.

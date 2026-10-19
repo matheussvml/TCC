@@ -10,6 +10,9 @@ const MAX_FONTES_PROMPT = 3;
 const MAX_RESUMO_CHARS = 150;
 
 const alegacao = $('Parsear alegações').item.json;
+// Desde 18/10/2026 o "Parsear alegações" põe o texto em português em
+// `alegacao` e usa `texto` para as palavras-chave da OpenAlex, em inglês.
+const textoAlegacao = alegacao.alegacao || alegacao.texto;
 
 // ---- Camada 1: OpenAlex → artigos científicos (título + DOI) ----
 let fontes_cientificas = [];
@@ -62,7 +65,7 @@ const checagens = fontes_jornalisticas.length
 
 const prompt_validar = `Analise a alegação considerando MÚLTIPLAS FONTES de verificação:
 
-ALEGAÇÃO: ${alegacao.texto}
+ALEGAÇÃO: ${textoAlegacao}
 CONTEXTO: ${alegacao.contexto || 'N/A'}
 TEMA: ${alegacao.tema || 'geral'}
 
@@ -108,7 +111,7 @@ const groq_body_validar = JSON.stringify({
 
 return {
   json: {
-    alegacao: alegacao.texto,
+    alegacao: textoAlegacao,
     contexto: alegacao.contexto,
     tema: alegacao.tema,
     id: alegacao.id,
