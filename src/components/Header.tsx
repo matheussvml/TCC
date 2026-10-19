@@ -30,7 +30,7 @@ export default function Header({ savedCount = 0, onOpenHistory }: HeaderProps) {
             className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border-2 border-gray-300 bg-white px-3.5 py-2 text-base font-semibold text-gray-800 transition hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
             title="Abrir histórico de análises salvas"
           >
-            <History className="h-5 w-5 text-blue-700" aria-hidden="true" />
+            <History className="shrink-0 h-5 w-5 text-blue-700" aria-hidden="true" />
             <span>Histórico</span>
             {savedCount > 0 && (
               <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-700 px-1.5 text-sm font-bold text-white">

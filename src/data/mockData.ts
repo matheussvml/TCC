@@ -9,7 +9,7 @@ export interface AnalysisResult {
   embedUrl: string;
   transcript: string;
   claims: Claim[];
-  overallScore: number;
+  overallScore: number | null; // null = nenhuma afirmação teve veredicto
 }
 
 export const mockAnalysisResult: AnalysisResult = {

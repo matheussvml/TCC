@@ -15,7 +15,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import type { AnalysisResult } from "@/data/mockData";
-import { getResultSummary, getVerdictLabel, type SummaryTone } from "@/lib/scoring";
+import { getOverallColor, getResultSummary, getVerdictLabel, type SummaryTone } from "@/lib/scoring";
 import { parar } from "@/lib/voz";
 import { linkWhatsApp, montarMensagemWhatsApp } from "@/lib/whatsapp";
 import BotaoOuvir from "./BotaoOuvir";
@@ -80,9 +80,11 @@ export default function ResultsSection({
   return (
     <section className="animate-fade-in mx-auto w-full max-w-5xl px-4 pb-16 pt-4 sm:px-6">
       {/* Resumo em linguagem simples: a primeira coisa que a pessoa lê */}
-      <div className={`mb-6 flex items-start gap-3 rounded-2xl border-2 p-5 ${box}`}>
+      {/* Celular: ícone em cima do texto, para os botões terem a largura toda */}
+      <div className={`mb-6 flex flex-col gap-3 rounded-2xl border-2 p-4 sm:flex-row sm:items-start sm:p-5 ${box}`}>
         <SummaryIcon className={`mt-0.5 h-8 w-8 shrink-0 ${iconClass}`} aria-hidden="true" />
-        <div>
+        {/* min-w-0: sem ele, com letra muito grande em 320 px, o texto e o botão do WhatsApp saíam da caixa */}
+        <div className="min-w-0 flex-1">
           {/* aria-live só no texto: o botão de ouvir muda de rótulo e não deve ser reanunciado */}
           <div role="status" aria-live="polite">
             <p className="text-xl font-bold leading-snug">{summary.headline}</p>
@@ -97,7 +99,7 @@ export default function ResultsSection({
               rel="noopener noreferrer"
               className="inline-flex min-h-12 items-center gap-2 rounded-xl border-2 border-green-800 bg-green-700 px-4 py-2 text-base font-bold text-white no-underline hover:bg-green-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-green-300"
             >
-              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+              <MessageCircle className="shrink-0 h-5 w-5" aria-hidden="true" />
               Enviar no WhatsApp
               <span className="sr-only"> (abre o WhatsApp)</span>
             </a>
@@ -141,16 +143,7 @@ export default function ResultsSection({
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-4">
-              <ScoreBadge
-                score={result.overallScore}
-                color={
-                  result.overallScore >= 70
-                    ? "green"
-                    : result.overallScore >= 40
-                    ? "yellow"
-                    : "red"
-                }
-              />
+              <ScoreBadge score={result.overallScore} color={getOverallColor(result.overallScore)} />
 
               {/* Contador com destaque de falsas */}
               <div className="flex flex-wrap items-center gap-2">
@@ -159,7 +152,7 @@ export default function ResultsSection({
                 </span>
                 {falseCount > 0 && (
                   <span className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1 text-base font-semibold text-red-800">
-                    <XCircle className="h-4 w-4" aria-hidden="true" />
+                    <XCircle className="shrink-0 h-4 w-4" aria-hidden="true" />
                     {falseCount} {falseCount === 1 ? "falsa" : "falsas"}
                   </span>
                 )}
@@ -179,7 +172,7 @@ export default function ResultsSection({
         {/* Validation claims */}
         <div className="order-1 lg:order-2 lg:col-span-3">
           <div className="mb-4 flex items-center gap-2">
-            <ShieldCheck className="h-6 w-6 text-blue-700" aria-hidden="true" />
+            <ShieldCheck className="shrink-0 h-6 w-6 text-blue-700" aria-hidden="true" />
             <h3 className="text-xl font-bold text-gray-900">O que verificamos</h3>
           </div>
 
@@ -198,12 +191,12 @@ export default function ResultsSection({
                 >
                   {expanded ? (
                     <>
-                      <ChevronUp className="h-5 w-5" aria-hidden="true" />
+                      <ChevronUp className="shrink-0 h-5 w-5" aria-hidden="true" />
                       Mostrar menos
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="h-5 w-5" aria-hidden="true" />
+                      <ChevronDown className="shrink-0 h-5 w-5" aria-hidden="true" />
                       Ver todas as {totalCount} afirmações
                     </>
                   )}
@@ -222,7 +215,7 @@ export default function ResultsSection({
       <div className="mt-10 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
           <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-700 text-white">
-            <Check className="h-3.5 w-3.5" aria-hidden="true" />
+            <Check className="shrink-0 h-3.5 w-3.5" aria-hidden="true" />
           </span>
           <span>{isSaved ? "Resultado salvo no histórico deste aparelho" : "Análise concluída"}</span>
         </div>
@@ -233,7 +226,7 @@ export default function ResultsSection({
             className={exportButtonClass}
             title="Exportar Relatório em Markdown formatado para TCC"
           >
-            <FileText className="h-4 w-4 text-blue-700" aria-hidden="true" />
+            <FileText className="shrink-0 h-4 w-4 text-blue-700" aria-hidden="true" />
             Relatório (.MD)
           </button>
 
@@ -242,7 +235,7 @@ export default function ResultsSection({
             className={exportButtonClass}
             title="Exportar Tabela de Alegações em CSV para Excel"
           >
-            <FileSpreadsheet className="h-4 w-4 text-green-700" aria-hidden="true" />
+            <FileSpreadsheet className="shrink-0 h-4 w-4 text-green-700" aria-hidden="true" />
             Planilha (.CSV)
           </button>
 
@@ -251,7 +244,7 @@ export default function ResultsSection({
             className={exportButtonClass}
             title="Exportar Dados Brutos em JSON para scripts"
           >
-            <Download className="h-4 w-4 text-purple-700" aria-hidden="true" />
+            <Download className="shrink-0 h-4 w-4 text-purple-700" aria-hidden="true" />
             Dados (.JSON)
           </button>
         </div>

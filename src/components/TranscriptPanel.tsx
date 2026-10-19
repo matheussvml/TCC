@@ -10,7 +10,7 @@ export default function TranscriptPanel({ transcript }: TranscriptPanelProps) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
       <div className="flex items-center gap-2 border-b border-gray-200 px-5 py-3">
-        <FileText className="h-5 w-5 text-gray-600" aria-hidden="true" />
+        <FileText className="shrink-0 h-5 w-5 text-gray-600" aria-hidden="true" />
         <h3 className="text-base font-bold text-gray-900">
           O que foi dito no vídeo
         </h3>

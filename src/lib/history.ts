@@ -1,6 +1,6 @@
 import type { AnalysisResult } from "@/data/mockData";
 import type { Claim } from "@/lib/scoring";
-import { normalizeFontes } from "@/lib/scoring";
+import { formatarEscore, normalizeFontes } from "@/lib/scoring";
 
 export interface AnalysisSummary {
   totalClaims: number;
@@ -192,7 +192,7 @@ export function exportAnalysisAsMarkdown(analysis: SavedAnalysis | AnalysisResul
   md += `> **Data de geração:** ${dateStr}  \n`;
   md += `> **Fonte do conteúdo:** \`${source}\`  \n`;
   md += `> **Título identificado:** ${analysis.videoTitle || "Sem título"}  \n`;
-  md += `> **Escore Global de Confiabilidade:** **${analysis.overallScore}%**\n\n`;
+  md += `> **Escore Global de Confiabilidade:** **${formatarEscore(analysis.overallScore)}**\n\n`;
 
   md += `## 1. Sumário Executivo\n\n`;
   md += `| Métrica | Valor |\n`;
@@ -202,7 +202,7 @@ export function exportAnalysisAsMarkdown(analysis: SavedAnalysis | AnalysisResul
   md += `| Parcialmente Verdadeiras | ${summary.partialClaims} |\n`;
   md += `| Falsas | ${summary.falseClaims} |\n`;
   md += `| Sem embasamento suficiente | ${summary.unsupportedClaims} |\n`;
-  md += `| **Confiabilidade Global** | **${analysis.overallScore}%** |\n\n`;
+  md += `| **Confiabilidade Global** | **${formatarEscore(analysis.overallScore)}** |\n\n`;
 
   md += `## 2. Alegações e Veredictos Detalhados\n\n`;
 

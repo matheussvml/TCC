@@ -27,12 +27,12 @@ export default function BotaoOuvir({ id, texto, rotulo = "Ouvir" }: BotaoOuvirPr
     >
       {ativo ? (
         <>
-          <Square className="h-5 w-5 fill-current" aria-hidden="true" />
+          <Square className="shrink-0 h-5 w-5 fill-current" aria-hidden="true" />
           Parar de ler
         </>
       ) : (
         <>
-          <Volume2 className="h-5 w-5" aria-hidden="true" />
+          <Volume2 className="shrink-0 h-5 w-5" aria-hidden="true" />
           {rotulo}
         </>
       )}

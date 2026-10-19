@@ -85,7 +85,7 @@ function FontesList({ fontes, linkClass }: { fontes: { titulo: string; url: stri
             href={f.url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`inline-flex items-start gap-1.5 py-1 text-base leading-snug underline underline-offset-2 [overflow-wrap:anywhere] ${linkClass}`}
+            className={`inline-flex min-h-11 items-start gap-1.5 py-2 text-base leading-snug underline underline-offset-2 [overflow-wrap:anywhere] ${linkClass}`}
           >
             <ExternalLink className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>
@@ -143,7 +143,7 @@ function SourcesSection({ claim }: { claim: Claim }) {
         {/* Checagem jornalística */}
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
           <p className="mb-2 inline-flex items-center gap-1.5 text-sm font-bold text-blue-900">
-            <Newspaper className="h-4 w-4" aria-hidden="true" />
+            <Newspaper className="shrink-0 h-4 w-4" aria-hidden="true" />
             Checagens de jornalistas
           </p>
           {hasJournalistic ? (
@@ -162,7 +162,7 @@ function SourcesSection({ claim }: { claim: Claim }) {
         {/* Artigos científicos */}
         <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
           <p className="mb-2 inline-flex items-center gap-1.5 text-sm font-bold text-purple-900">
-            <FlaskConical className="h-4 w-4" aria-hidden="true" />
+            <FlaskConical className="shrink-0 h-4 w-4" aria-hidden="true" />
             Artigos científicos
           </p>
           {hasScientific ? (
@@ -231,17 +231,17 @@ export default function ClaimCard({ claim, index }: ClaimCardProps) {
         <div className="mb-4 flex flex-wrap gap-2">
           {hasJournalistic && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-900">
-              <Newspaper className="h-4 w-4" aria-hidden="true" /> Checado por jornalistas
+              <Newspaper className="shrink-0 h-4 w-4" aria-hidden="true" /> Checado por jornalistas
             </span>
           )}
           {hasScientific && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-sm font-medium text-purple-900">
-              <FlaskConical className="h-4 w-4" aria-hidden="true" /> Com base científica
+              <FlaskConical className="shrink-0 h-4 w-4" aria-hidden="true" /> Com base científica
             </span>
           )}
           {!hasAnySources && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-900">
-              <AlertTriangle className="h-4 w-4" aria-hidden="true" /> Verificação automática, sem fontes
+              <AlertTriangle className="shrink-0 h-4 w-4" aria-hidden="true" /> Verificação automática, sem fontes
             </span>
           )}
         </div>

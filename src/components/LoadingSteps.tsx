@@ -15,7 +15,7 @@ export default function LoadingSteps({
 
   return (
     <section className="mx-auto w-full max-w-xl px-4 py-10 sm:px-6">
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
         <h3 className="text-center text-xl font-bold text-gray-900">
           Verificando o vídeo...
         </h3>
@@ -42,7 +42,7 @@ export default function LoadingSteps({
             return (
               <li
                 key={i}
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base transition-all ${
+                className={`flex items-center gap-3 rounded-lg px-3 py-3 text-base transition-all sm:px-4 ${
                   isDone
                     ? "bg-green-50 text-green-900"
                     : isActive
@@ -59,7 +59,8 @@ export default function LoadingSteps({
                     {i + 1}
                   </span>
                 )}
-                <span>
+                {/* hyphens-auto: "Transcrevendo" a 22 px não cabe inteiro numa tela de 320 px */}
+                <span className="min-w-0 hyphens-auto [overflow-wrap:anywhere]">
                   {step.label}
                   {isDone && <span className="sr-only"> (concluído)</span>}
                 </span>

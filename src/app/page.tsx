@@ -16,6 +16,7 @@ import {
 } from "@/lib/history";
 import { extrairAudio } from "@/lib/audio";
 import { extrairLink } from "@/lib/links";
+import { calcularEscoreGeral } from "@/lib/scoring";
 
 const API_URL = "/api/transcribe";
 const N8N_WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || "";
@@ -167,18 +168,13 @@ export default function Home() {
       ? `https://www.youtube.com/embed/${youtubeMatch[1]}`
       : "";
 
-    // Recalcula overallScore com base na média de confianca das claims
-    // se o n8n retornar 0 ou indefinido (workaround pro bug do nó Consolidar)
+    // O escore geral vem do n8n; null quer dizer que nenhuma afirmação teve
+    // veredicto. Até 18/10/2026 um 0 aqui era trocado pela média das
+    // confianças: um vídeo só com "sem embasamento" aparecia 60-88% confiável,
+    // e um vídeo todo FALSO com confiança 1.0 apareceria 100% confiável.
     const claims = Array.isArray(n8nData.claims) ? n8nData.claims : [];
-    let overallScore = n8nData.overallScore;
-    if (!overallScore && claims.length > 0) {
-      const totalConfianca = claims.reduce(
-        (acc: number, c: { confianca?: number }) =>
-          acc + (typeof c.confianca === "number" ? c.confianca : 0),
-        0
-      );
-      overallScore = Math.round((totalConfianca / claims.length) * 100);
-    }
+    const overallScore =
+      typeof n8nData.overallScore === "number" ? n8nData.overallScore : calcularEscoreGeral(claims);
 
     const analysisResult: AnalysisResult = {
       videoTitle: transcribeData.title || "Vídeo analisado",
@@ -187,7 +183,7 @@ export default function Home() {
       embedUrl,
       transcript: transcribeData.text,
       claims,
-      overallScore: overallScore || 0,
+      overallScore,
     };
 
     // Salva automaticamente no histórico local para relatórios e pesquisas

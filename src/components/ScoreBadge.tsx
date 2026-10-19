@@ -3,7 +3,7 @@
 type ColorProp = "green" | "yellow" | "red" | "gray";
 
 interface ScoreBadgeProps {
-  score: number;
+  score: number | null; // null = nenhuma afirmação teve veredicto
   color?: ColorProp;
 }
 
@@ -18,25 +18,32 @@ const colorClasses: Record<ColorProp, string> = {
 export default function ScoreBadge({ score, color }: ScoreBadgeProps) {
   const resolved = color
     ? colorClasses[color]
+    : score === null
+    ? colorClasses.gray
     : score >= 80
     ? colorClasses.green
     : score >= 50
     ? colorClasses.yellow
     : colorClasses.red;
 
-  const isVeryLow = score < 10;
-
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-xl border-2 px-4 py-2 text-base font-semibold ${resolved}`}
+      // flex-wrap + max-w-full: com letra muito grande numa tela de 320 px,
+      // "41% de confiabilidade" vazava 14 px; agora o texto desce de linha
+      className={`inline-flex max-w-full flex-wrap items-center gap-x-2 rounded-xl border-2 px-4 py-2 text-base font-semibold ${resolved}`}
     >
-      {isVeryLow ? (
+      {score === null ? (
+        <span>
+          <span className="font-extrabold">Sem conclusão</span>: faltam provas
+        </span>
+      ) : score < 10 ? (
         <span className="font-extrabold">Informação não confiável</span>
       ) : (
-        <>
-          <span className="text-2xl font-extrabold">{score}%</span>
-          <span>de confiabilidade</span>
-        </>
+        // Um texto corrido só: ao quebrar linha sai "41% de / confiabilidade",
+        // e não o "de" sozinho numa linha, como acontecia com dois blocos
+        <span className="leading-snug">
+          <span className="text-2xl font-extrabold">{score}%</span> de confiabilidade
+        </span>
       )}
     </div>
   );

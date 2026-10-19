@@ -52,7 +52,25 @@ export function normalizeFontes(fontes: FonteItem[] | string | undefined): Norma
 export interface FactCheckResult {
   status: "success" | "error";
   claims: Claim[];
-  overallScore: number;
+  overallScore: number | null;
+}
+
+// Mesma regra do nó "Consolidar resultado final" do n8n (18/10/2026): SEM
+// EMBASAMENTO fica fora da média, porque "não achamos prova" não é "é falso".
+// Se nenhuma afirmação teve veredicto, não há escore: null.
+export function calcularEscoreGeral(claims: Claim[]): number | null {
+  const avaliadas = claims.filter((c) => c.veredicto !== "SEM EMBASAMENTO SUFICIENTE");
+  if (avaliadas.length === 0) return null;
+  return Math.round(avaliadas.reduce((acc, c) => acc + (c.displayScore ?? 0), 0) / avaliadas.length);
+}
+
+export function getOverallColor(score: number | null): DisplayColor {
+  if (score === null) return "gray";
+  return score >= 70 ? "green" : score >= 40 ? "yellow" : "red";
+}
+
+export function formatarEscore(score: number | null): string {
+  return score === null ? "sem conclusão (faltam provas)" : `${score}%`;
 }
 
 export interface ScoreDisplay {
@@ -162,6 +180,13 @@ export function getResultSummary(claims: Claim[]): ResultSummary {
       headline,
       advice: "Cuidado: este vídeo tem informações falsas. Pense bem antes de compartilhar.",
       tone: "danger",
+    };
+  }
+  if (semProvas === total) {
+    return {
+      headline,
+      advice: "Não encontramos provas a favor nem contra. Na dúvida, não compartilhe.",
+      tone: "warning",
     };
   }
   if (parciais > 0 || semProvas > 0) {

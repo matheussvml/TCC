@@ -12,10 +12,13 @@ import {
 } from "@/lib/a11y";
 import { useVoz } from "@/lib/voz";
 
+// Cada botão mostra a própria palavra no tamanho que a letra vai ficar. As
+// amostras guardam a proporção 16 : 19 : 22 px da raiz (globals.css) e usam px
+// fixos para não crescerem junto quando a letra grande já está ligada.
 const OPCOES_FONTE: { valor: TamanhoFonte; rotulo: string; amostra: string }[] = [
-  { valor: "normal", rotulo: "Normal", amostra: "text-lg" },
-  { valor: "grande", rotulo: "Grande", amostra: "text-2xl" },
-  { valor: "muito-grande", rotulo: "Muito grande", amostra: "text-3xl" },
+  { valor: "normal", rotulo: "Normal", amostra: "text-[18px]" },
+  { valor: "grande", rotulo: "Grande", amostra: "text-[21px]" },
+  { valor: "muito-grande", rotulo: "Muito grande", amostra: "text-[25px]" },
 ];
 
 // Interruptor grande, com o estado escrito ("Ligado"/"Desligado"): não depende
@@ -139,8 +142,9 @@ export default function AccessibilityBar() {
             {/* min-w-0: fieldset não encolhe abaixo do conteúdo por padrão e vazava da tela com letra grande */}
             <fieldset className="min-w-0 rounded-xl border-2 border-gray-300 bg-white p-4">
               <legend className="px-1 text-lg font-bold text-gray-900">Tamanho da letra</legend>
-              {/* Celular: um botão largo por linha. Telas maiores: três lado a lado */}
-              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {/* Celular e tablet: um botão largo por linha. Telas grandes: três lado
+                  a lado (antes de md, "Muito grande" a 25 px não cabe num terço) */}
+              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
                 {OPCOES_FONTE.map((op) => {
                   const ativo = prefs.fonte === op.valor;
                   return (
@@ -149,14 +153,13 @@ export default function AccessibilityBar() {
                       type="button"
                       aria-pressed={ativo}
                       onClick={() => atualizar({ fonte: op.valor })}
-                      className={`flex min-h-14 min-w-0 items-center justify-center gap-3 rounded-xl border-2 px-3 py-2 font-bold transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 sm:min-h-20 sm:flex-col sm:gap-1 ${
+                      className={`flex min-h-16 min-w-0 items-center justify-center rounded-xl border-2 px-3 py-2 text-center font-bold leading-tight transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 ${op.amostra} ${
                         ativo
                           ? "border-blue-800 bg-blue-700 text-white"
                           : "border-gray-400 bg-white text-gray-900 hover:border-blue-600"
                       }`}
                     >
-                      <span className={`${op.amostra} leading-none`} aria-hidden="true">A</span>
-                      <span className="text-base">{op.rotulo}</span>
+                      {op.rotulo}
                     </button>
                   );
                 })}
@@ -197,7 +200,7 @@ export default function AccessibilityBar() {
                     onClick={() => atualizar(PREFERENCIAS_PADRAO)}
                     className="flex min-h-12 items-center gap-2 rounded-xl border-2 border-gray-400 bg-white px-4 text-base font-semibold text-gray-900 hover:bg-gray-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                   >
-                    <RotateCcw className="h-5 w-5" aria-hidden="true" />
+                    <RotateCcw className="shrink-0 h-5 w-5" aria-hidden="true" />
                     Voltar ao normal
                   </button>
                 )}

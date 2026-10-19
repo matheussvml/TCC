@@ -69,41 +69,46 @@ export default function VideoInput({
         }}
         className="mt-8 flex flex-col gap-3 sm:flex-row"
       >
-        <div className="relative flex-1">
+        {/* Celular: o "Colar" vem embaixo do campo, largo. Dentro do campo ele
+            reservava 165 px e, com letra grande em 320 px, a dica virava "Col" */}
+        <div className="flex-1 sm:relative">
           <label htmlFor="video-url" className="sr-only">
             Link do vídeo
           </label>
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 text-gray-500" aria-hidden="true" />
-          <input
-            id="video-url"
-            type="text"
-            inputMode="url"
-            autoComplete="off"
-            value={url}
-            onChange={(e) => onUrlChange(e.target.value)}
-            onPaste={(e) => {
-              // Colou a mensagem inteira do WhatsApp? Fica só o link.
-              const texto = e.clipboardData.getData("text");
-              const link = extrairLink(texto);
-              if (link && link !== texto.trim()) {
-                e.preventDefault();
-                onUrlChange(link);
-              }
-            }}
-            placeholder="Cole o link aqui"
-            className={`min-h-14 w-full rounded-xl border-2 border-gray-400 bg-white py-4 pl-13 text-lg text-gray-900 shadow-sm outline-none transition-all placeholder:text-gray-500 focus:border-blue-600 focus:ring-4 focus:ring-blue-200 disabled:bg-gray-100 ${
-              podeColar ? "pr-30" : "pr-4"
-            }`}
-            disabled={bloqueado}
-          />
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 text-gray-500" aria-hidden="true" />
+            <input
+              id="video-url"
+              type="text"
+              inputMode="url"
+              autoComplete="off"
+              value={url}
+              onChange={(e) => onUrlChange(e.target.value)}
+              onPaste={(e) => {
+                // Colou a mensagem inteira do WhatsApp? Fica só o link.
+                const texto = e.clipboardData.getData("text");
+                const link = extrairLink(texto);
+                if (link && link !== texto.trim()) {
+                  e.preventDefault();
+                  onUrlChange(link);
+                }
+              }}
+              placeholder="Cole o link aqui"
+              className={`min-h-14 w-full rounded-xl border-2 border-gray-400 bg-white py-4 pl-13 text-lg text-gray-900 shadow-sm outline-none transition-all placeholder:text-gray-500 focus:border-blue-600 focus:ring-4 focus:ring-blue-200 disabled:bg-gray-100 ${
+                podeColar ? "pr-4 sm:pr-30" : "pr-4"
+              }`}
+              disabled={bloqueado}
+            />
+          </div>
           {podeColar && !bloqueado && (
             <button
               type="button"
               onClick={colarLink}
-              className="absolute right-2 top-1/2 flex min-h-11 -translate-y-1/2 items-center gap-1.5 rounded-lg border-2 border-blue-700 bg-blue-50 px-3 text-base font-bold text-blue-800 hover:bg-blue-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+              className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-blue-700 bg-blue-50 px-3 text-lg font-bold text-blue-800 hover:bg-blue-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 sm:absolute sm:right-2 sm:top-1/2 sm:mt-0 sm:min-h-11 sm:w-auto sm:-translate-y-1/2 sm:gap-1.5 sm:rounded-lg sm:text-base"
             >
-              <ClipboardPaste className="h-5 w-5" aria-hidden="true" />
-              Colar
+              <ClipboardPaste className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span className="sm:hidden">Colar o link</span>
+              <span className="hidden sm:inline">Colar</span>
             </button>
           )}
         </div>
@@ -115,12 +120,12 @@ export default function VideoInput({
         >
           {isLoading ? (
             <>
-              <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+              <Loader2 className="h-6 w-6 shrink-0 animate-spin" aria-hidden="true" />
               Verificando...
             </>
           ) : (
             <>
-              <Search className="h-6 w-6" aria-hidden="true" />
+              <Search className="h-6 w-6 shrink-0" aria-hidden="true" />
               Verificar vídeo
             </>
           )}
@@ -148,7 +153,7 @@ export default function VideoInput({
         </div>
       ) : (
         <label className="mt-4 inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border-2 border-gray-300 bg-white px-5 py-2.5 text-base font-semibold text-gray-800 transition-colors hover:border-blue-400 hover:text-blue-800 focus-within:ring-4 focus-within:ring-blue-200">
-          <Upload className="h-5 w-5" aria-hidden="true" />
+          <Upload className="h-5 w-5 shrink-0" aria-hidden="true" />
           Ou envie um vídeo do celular ou computador
           <input
             type="file"
